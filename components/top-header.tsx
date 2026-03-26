@@ -12,8 +12,22 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
+import { signOut } from "firebase/auth"
+import { auth } from "@/lib/firebase"
 
 export function TopHeader() {
+  const router = useRouter()
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth)
+      router.push("/login")
+    } catch (error) {
+      console.error("Logout error", error)
+    }
+  }
+
   return (
     <header className="sticky top-0 z-40 h-16 bg-background border-b border-border">
       <div className="flex items-center justify-between h-full px-4 lg:px-6">
@@ -51,8 +65,8 @@ export function TopHeader() {
                 <Link href="/staff/jobs">Staff View</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/login">Sign Out</Link>
+              <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
+                Sign Out
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
