@@ -1,0 +1,88 @@
+{
+  "Common": {
+    "loading": "جاري التحميل...",
+    "error": "خطأ",
+    "save": "حفظ التغييرات",
+    "saving": "جاري الحفظ...",
+    "cancel": "إلغاء",
+    "search": "بحث...",
+    "noResults": "لم يتم العثور على نتائج",
+    "defaultBusinessName": "عمل {name}",
+    "defaultBusinessFallback": "عملي",
+    "defaultInvoiceFooter": "شكرا لتعاملك معنا!"
+  },
+  "Status": {
+    "new": "جديد",
+    "assigned": "معين",
+    "inProgress": "قيد التنفيذ",
+    "completed": "مكتمل",
+    "contacted": "تم التواصل",
+    "converted": "محول",
+    "rejected": "مرفوض",
+    "draft": "مسودة",
+    "sent": "مرسل",
+    "paid": "مدفوع",
+    "active": "نشط",
+    "inactive": "غير نشط",
+    "unassigned": "غير معين"
+  },
+  "Navigation": {
+    "dashboard": "لوحة القيادة",
+    "jobs": "الوظائف",
+    "bookings": "الحجوزات",
+    "staff": "الموظفين",
+    "invoices": "الفواتير",
+    "branding": "العلامة التجارية",
+    "publicPreview": "معاينة الصفحة العامة",
+    "signOut": "تسجيل الخروج",
+    "staffView": "عرض الموظف",
+    "adminAccount": "حساب المسؤول",
+    "settings": "الإعدادات",
+    "adminView": "عرض المسؤول",
+    "toggleMenu": "تبديل القائمة",
+    "navMenuLabel": "قائمة التنقل",
+    "mainNavFor": "التنقل الرئيسي لـ {name}",
+    "notifications": "الإشعارات",
+    "userMenu": "قائمة المستخدم"
+  },
+  "Dashboard": {
+    "title": "لوحة القيادة",
+    "description": "نظرة عامة على نشاط عملك",
+    "stats": {
+      "jobsToday": "وظائف اليوم",
+      "pendingRequests": "الطلبات المعلقة",
+      "activeStaff": "الموظفين النشطين",
+      "recentInvoices": "الفواتير الأخيرة"
+    },
+    "recentJobs": "الوظائف الأخيرة",
+    "noJobsToday": "لا توجد وظائف مجدولة لليوم",
+    "recentBookings": "الحجوزات الأخيرة",
+    "noPendingRequests": "لا توجد طلبات حجز معلقة"
+  },
+  "Auth": {
+    "signIn": "تسجيل الدخول إلى حسابك",
+    "signInDesc": "استخدم حساب Google الخاص بك للوصول إلى لوحة القيادة",
+    "signInWithGoogle": "تسجيل الدخول باستخدام Google",
+    "signingIn": "جاري تسجيل الدخول...",
+    "poweredBy": "المصادقة مدعومة بواسطة Firebase.\\nقم بتسجيل الدخول لمزامنة بيانات لوحة القيادة الخاصة بك.",
+    "marketingTitle": "إدارة عملك الخدمي بسهولة",
+    "marketingPoints": {
+      "bookings": {
+        "title": "استلام طلبات الحجز",
+        "desc": "اقبل استفسارات العملاء عبر صفحة الحجز العامة الخاصة بك"
+      },
+      "jobs": {
+        "title": "إدارة الوظائف والموظفين",
+        "desc": "أنشئ الوظائف، وقم بتعيين الموظفين، وتتبع التقدم في الوقت الفعلي"
+      },
+      "proof": {
+        "title": "جمع إثباتات الإنجاز",
+        "desc": "يمكن للموظفين تحميل الصور لتوثيق العمل المنجز"
+      },
+      "invoices": {
+        "title": "إنشاء فواتير احترافية",
+        "desc": "أنشئ فواتير ذات علامة تجارية جاهزة للمشاركة مع العملاء"
+      }
+    }
+  }
+}

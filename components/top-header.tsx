@@ -11,13 +11,14 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { Link, useRouter } from "@/src/i18n/routing"
 import { signOut } from "firebase/auth"
 import { auth } from "@/lib/firebase"
+import { useTranslations } from "next-intl"
 
 export function TopHeader() {
   const router = useRouter()
+  const tNav = useTranslations("Navigation")
 
   const handleLogout = async () => {
     try {
@@ -44,29 +45,29 @@ export function TopHeader() {
         <div className="flex items-center gap-2">
           <Button variant="ghost" size="icon" className="relative">
             <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 w-2 h-2 bg-destructive rounded-full" />
-            <span className="sr-only">Notifications</span>
+            <span className="absolute top-1 right-1 rtl:right-auto rtl:left-1 w-2 h-2 bg-destructive rounded-full" />
+            <span className="sr-only">{tNav("notifications")}</span>
           </Button>
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon">
                 <User className="h-5 w-5" />
-                <span className="sr-only">User menu</span>
+                <span className="sr-only">{tNav("userMenu")}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-48">
-              <DropdownMenuLabel>Admin Account</DropdownMenuLabel>
+              <DropdownMenuLabel>{tNav("adminAccount")}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/settings/branding">Settings</Link>
+                <Link href="/settings/branding">{tNav("settings")}</Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
-                <Link href="/staff/jobs">Staff View</Link>
+                <Link href="/staff/jobs">{tNav("staffView")}</Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={handleLogout} className="cursor-pointer">
-                Sign Out
+                {tNav("signOut")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>

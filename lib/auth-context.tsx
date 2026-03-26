@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from "react"
 import { User, onAuthStateChanged } from "firebase/auth"
 import { auth, database } from "./firebase"
 import { ref, get, set } from "firebase/database"
+import { useTranslations } from "next-intl"
 
 interface AuthContextType {
   user: User | null
@@ -23,6 +24,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [userData, setUserData] = useState<any | null>(null)
   const [loading, setLoading] = useState(true)
+  const t = useTranslations("Common")
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
@@ -49,12 +51,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             // Also create the business record
             const businessRef = ref(database, `businesses/${newBusinessId}`)
             await set(businessRef, {
-              name: currentUser.displayName ? `${currentUser.displayName}'s Business` : "My Business",
+              name: currentUser.displayName ? t("defaultBusinessName", { name: currentUser.displayName }) : t("defaultBusinessFallback"),
               email: currentUser.email || "",
               phone: "",
               primaryColor: "#0f172a",
               slug: newBusinessId,
-              invoiceFooter: "Thank you for your business!",
+              invoiceFooter: t("defaultInvoiceFooter"),
               createdAt: new Date().toISOString()
             })
             setUserData(newUserData)

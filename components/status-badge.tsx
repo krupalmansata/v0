@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils"
+import { useTranslations } from "next-intl"
 
 type JobStatus = "new" | "assigned" | "in-progress" | "completed"
 type BookingStatus = "new" | "contacted" | "converted" | "rejected"
@@ -22,27 +23,29 @@ const statusStyles: Record<Status, string> = {
   inactive: "bg-gray-100 text-gray-700",
 }
 
-const statusLabels: Record<Status, string> = {
-  new: "New",
-  assigned: "Assigned",
-  "in-progress": "In Progress",
-  completed: "Completed",
-  contacted: "Contacted",
-  converted: "Converted",
-  rejected: "Rejected",
-  draft: "Draft",
-  sent: "Sent",
-  paid: "Paid",
-  active: "Active",
-  inactive: "Inactive",
-}
-
 interface StatusBadgeProps {
   status: Status
   className?: string
 }
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
+  const tStatus = useTranslations("Status")
+  
+  const statusLabels: Record<Status, string> = {
+    new: tStatus("new"),
+    assigned: tStatus("assigned"),
+    "in-progress": tStatus("inProgress"),
+    completed: tStatus("completed"),
+    contacted: tStatus("contacted"),
+    converted: tStatus("converted"),
+    rejected: tStatus("rejected"),
+    draft: tStatus("draft"),
+    sent: tStatus("sent"),
+    paid: tStatus("paid"),
+    active: tStatus("active"),
+    inactive: tStatus("inactive"),
+  }
+
   return (
     <span
       className={cn(

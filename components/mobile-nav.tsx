@@ -1,9 +1,9 @@
 "use client"
 
-import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { Link, usePathname } from "@/src/i18n/routing"
 import { Menu, ExternalLink } from "lucide-react"
 import { useState, useEffect } from "react"
+import { useTranslations, useLocale } from "next-intl"
 import {
   LayoutDashboard,
   Briefcase,
@@ -19,21 +19,25 @@ import { ref, onValue } from "firebase/database"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 
-const navItems = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/jobs", label: "Jobs", icon: Briefcase },
-  { href: "/bookings", label: "Bookings", icon: CalendarCheck },
-  { href: "/staff", label: "Staff", icon: Users },
-  { href: "/invoice-preview", label: "Invoices", icon: FileText },
-  { href: "/settings/branding", label: "Branding", icon: Palette },
-]
-
 export function MobileNav() {
   const pathname = usePathname()
+  const locale = useLocale()
+  const isRtl = locale === 'ar'
+  const tNav = useTranslations("Navigation")
+  const tCommon = useTranslations("Common")
   const [open, setOpen] = useState(false)
   const { userData } = useAuth()
-  const [businessName, setBusinessName] = useState("My Business")
+  const [businessName, setBusinessName] = useState("")
   const [businessSlug, setBusinessSlug] = useState("")
+
+  const navItems = [
+    { href: "/dashboard", label: tNav("dashboard"), icon: LayoutDashboard },
+    { href: "/jobs", label: tNav("jobs"), icon: Briefcase },
+    { href: "/bookings", label: tNav("bookings"), icon: CalendarCheck },
+    { href: "/staff", label: tNav("staff"), icon: Users },
+    { href: "/invoice-preview", label: tNav("invoices"), icon: FileText },
+    { href: "/settings/branding", label: tNav("branding"), icon: Palette },
+  ]
 
   useEffect(() => {
     if (!userData?.businessId) return
@@ -41,7 +45,7 @@ export function MobileNav() {
     const unsubscribe = onValue(businessRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val()
-        setBusinessName(data.name || "My Business")
+        setBusinessName(data.name || tCommon("defaultBusinessFallback"))
         setBusinessSlug(data.slug || userData.businessId)
       }
     })
@@ -53,19 +57,19 @@ export function MobileNav() {
       <SheetTrigger asChild>
         <Button variant="ghost" size="icon" className="lg:hidden">
           <Menu className="h-5 w-5" />
-          <span className="sr-only">Toggle menu</span>
+          <span className="sr-only">{tNav("toggleMenu")}</span>
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-64 p-0">
-        <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-        <SheetDescription className="sr-only">Main navigation for {businessName}</SheetDescription>
+      <SheetContent side={isRtl ? "right" : "left"} className="w-64 p-0">
+        <SheetTitle className="sr-only">{tNav("navMenuLabel")}</SheetTitle>
+        <SheetDescription className="sr-only">{tNav("mainNavFor", { name: businessName || tCommon("defaultBusinessFallback") })}</SheetDescription>
         <div className="flex items-center gap-3 h-16 px-6 border-b border-border">
           <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center">
             <span className="text-background font-semibold text-sm">
-              {businessName.substring(0, 2).toUpperCase()}
+              {(businessName || "B").substring(0, 2).toUpperCase()}
             </span>
           </div>
-          <span className="font-semibold text-foreground truncate">{businessName}</span>
+          <span className="font-semibold text-foreground truncate">{businessName || tCommon("loading")}</span>
         </div>
 
         <nav className="px-3 py-4">
@@ -101,7 +105,7 @@ export function MobileNav() {
               className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
             >
               <ExternalLink className="h-4 w-4" />
-              Preview Public Page
+              {tNav("publicPreview")}
             </Link>
           )}
         </div>

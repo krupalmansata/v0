@@ -1,0 +1,88 @@
+{
+  "Common": {
+    "loading": "Loading...",
+    "error": "Error",
+    "save": "Save Changes",
+    "saving": "Saving...",
+    "cancel": "Cancel",
+    "search": "Search...",
+    "noResults": "No results found",
+    "defaultBusinessName": "{name}'s Business",
+    "defaultBusinessFallback": "My Business",
+    "defaultInvoiceFooter": "Thank you for your business!"
+  },
+  "Status": {
+    "new": "New",
+    "assigned": "Assigned",
+    "inProgress": "In Progress",
+    "completed": "Completed",
+    "contacted": "Contacted",
+    "converted": "Converted",
+    "rejected": "Rejected",
+    "draft": "Draft",
+    "sent": "Sent",
+    "paid": "Paid",
+    "active": "Active",
+    "inactive": "Inactive",
+    "unassigned": "Unassigned"
+  },
+  "Navigation": {
+    "dashboard": "Dashboard",
+    "jobs": "Jobs",
+    "bookings": "Bookings",
+    "staff": "Staff",
+    "invoices": "Invoices",
+    "branding": "Branding",
+    "publicPreview": "Preview Public Page",
+    "signOut": "Sign Out",
+    "staffView": "Staff View",
+    "adminAccount": "Admin Account",
+    "settings": "Settings",
+    "adminView": "Admin View",
+    "toggleMenu": "Toggle menu",
+    "navMenuLabel": "Navigation Menu",
+    "mainNavFor": "Main navigation for {name}",
+    "notifications": "Notifications",
+    "userMenu": "User menu"
+  },
+  "Dashboard": {
+    "title": "Dashboard",
+    "description": "Overview of your business activity",
+    "stats": {
+      "jobsToday": "Today's Jobs",
+      "pendingRequests": "Pending Requests",
+      "activeStaff": "Active Staff",
+      "recentInvoices": "Recent Invoices"
+    },
+    "recentJobs": "Recent Jobs",
+    "noJobsToday": "No jobs scheduled for today",
+    "recentBookings": "Recent Bookings",
+    "noPendingRequests": "No pending booking requests"
+  },
+  "Auth": {
+    "signIn": "Sign in to your account",
+    "signInDesc": "Use your Google account to access your dashboard",
+    "signInWithGoogle": "Sign in with Google",
+    "signingIn": "Signing in...",
+    "poweredBy": "Authentication is powered by Firebase.\\nLog in to sync your Realtime Dashboard data.",
+    "marketingTitle": "Manage your service business with ease",
+    "marketingPoints": {
+      "bookings": {
+        "title": "Receive booking requests",
+        "desc": "Accept customer inquiries through your public booking page"
+      },
+      "jobs": {
+        "title": "Manage jobs and staff",
+        "desc": "Create jobs, assign staff, and track progress in real-time"
+      },
+      "proof": {
+        "title": "Collect proof of completion",
+        "desc": "Staff can upload photos to document completed work"
+      },
+      "invoices": {
+        "title": "Generate professional invoices",
+        "desc": "Create branded invoices ready to share with customers"
+      }
+    }
+  }
+}

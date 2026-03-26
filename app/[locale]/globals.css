@@ -122,4 +122,17 @@
   body {
     @apply bg-background text-foreground;
   }
+  
+  /* RTL specific global overrides */
+  [dir="rtl"] {
+    text-align: right;
+  }
+  
+  /* Fix scrollbars or input fields that need to respect LTR explicitly in RTL context (like phones) */
+  [dir="rtl"] input[type="tel"],
+  [dir="rtl"] input[type="email"],
+  [dir="rtl"] input[type="url"] {
+    direction: ltr;
+    text-align: right;
+  }
 }
