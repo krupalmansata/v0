@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
@@ -17,10 +17,20 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { PageHeader } from "@/components/page-header"
-import { staff, serviceTypes } from "@/lib/mock-data"
+import { useAuth } from "@/lib/auth-context"
+import { useToast } from "@/components/ui/use-toast"
+import { database } from "@/lib/firebase"
+import { ref, push, set, onValue } from "firebase/database"
 
 export default function NewJobPage() {
+  const { userData } = useAuth()
+  const businessId = userData?.businessId
+  const { toast } = useToast()
+  
   const router = useRouter()
+  const [loading, setLoading] = useState(false)
+  const [staff, setStaff] = useState<any[]>([])
+
   const [formData, setFormData] = useState({
     customerName: "",
     customerPhone: "",
@@ -34,17 +44,58 @@ export default function NewJobPage() {
     notes: "",
   })
 
+  // Basic service types (you may want to move these to DB later)
+  const serviceTypes = ["AC Servicing", "Plumbing", "Electrical", "Cleaning", "Pest Control", "Other"]
+
+  useEffect(() => {
+    if (!businessId) return
+    const staffRef = ref(database, `staff/${businessId}`)
+    const unsubscribeStaff = onValue(staffRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val()
+        setStaff(Object.keys(data).map(key => ({ id: key, ...data[key] })).filter(s => s.status === "active"))
+      } else setStaff([])
+    })
+    return () => unsubscribeStaff()
+  }, [businessId])
+
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleSubmit = (isDraft: boolean) => {
-    // Mock submit - just redirect
-    router.push("/jobs")
+  const handleSubmit = async (isDraft: boolean) => {
+    if (!businessId) return
+    setLoading(true)
+    try {
+      const jobsRef = ref(database, `jobs/${businessId}`)
+      const newJobRef = push(jobsRef)
+      
+      const jobData = {
+        ...formData,
+        status: isDraft ? "draft" : (formData.assignedStaffId ? "assigned" : "new"),
+        createdAt: new Date().toISOString(),
+      }
+      
+      await set(newJobRef, jobData)
+      
+      toast({
+        title: "Job Created",
+        description: `Successfully created a new job.`,
+      })
+      router.push("/jobs")
+    } catch (error) {
+      console.error("Failed to create job:", error)
+      toast({
+        title: "Error",
+        description: "Failed to create job. Please try again.",
+        variant: "destructive"
+      })
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const activeStaff = staff.filter((s) => s.status === "active")
-  const selectedStaff = activeStaff.find((s) => s.id === formData.assignedStaffId)
+  const selectedStaff = staff.find((s) => s.id === formData.assignedStaffId)
 
   return (
     <div className="space-y-6">
@@ -180,7 +231,7 @@ export default function NewJobPage() {
                     <SelectValue placeholder="Select staff member" />
                   </SelectTrigger>
                   <SelectContent>
-                    {activeStaff.map((member) => (
+                    {staff.map((member) => (
                       <SelectItem key={member.id} value={member.id}>
                         {member.name} - {member.role}
                       </SelectItem>
@@ -203,8 +254,10 @@ export default function NewJobPage() {
 
           {/* Actions */}
           <div className="flex flex-col gap-2 sm:flex-row">
-            <Button onClick={() => handleSubmit(false)}>Create Job</Button>
-            <Button variant="outline" onClick={() => handleSubmit(true)}>
+            <Button onClick={() => handleSubmit(false)} disabled={loading}>
+              {loading ? "Creating..." : "Create Job"}
+            </Button>
+            <Button variant="outline" onClick={() => handleSubmit(true)} disabled={loading}>
               Save Draft
             </Button>
             <Button variant="ghost" asChild>

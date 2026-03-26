@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Upload, Eye, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -9,7 +9,10 @@ import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
 import { PageHeader } from "@/components/page-header"
-import { business } from "@/lib/mock-data"
+import { useAuth } from "@/lib/auth-context"
+import { dbGet, dbUpdate } from "@/lib/db"
+import { useToast } from "@/components/ui/use-toast"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const colorPresets = [
   { name: "Dark", value: "#0f172a" },
@@ -20,16 +23,82 @@ const colorPresets = [
 ]
 
 export default function BrandingPage() {
+  const { userData } = useAuth()
+  const businessId = userData?.businessId
+  const { toast } = useToast()
+  
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [slug, setSlug] = useState("")
+  
   const [formData, setFormData] = useState({
-    name: business.name,
-    phone: business.phone,
-    email: business.email,
-    primaryColor: business.primaryColor,
-    invoiceFooter: business.invoiceFooter,
+    name: "",
+    phone: "",
+    email: "",
+    primaryColor: "#0f172a",
+    invoiceFooter: "",
   })
+
+  useEffect(() => {
+    async function loadBusinessData() {
+      if (!businessId) return
+      setLoading(true)
+      try {
+        const data = await dbGet(`businesses/${businessId}`)
+        if (data) {
+          setFormData({
+            name: data.name || "",
+            phone: data.phone || "",
+            email: data.email || "",
+            primaryColor: data.primaryColor || "#0f172a",
+            invoiceFooter: data.invoiceFooter || "",
+          })
+          setSlug(data.slug || businessId)
+        }
+      } catch (error) {
+        toast({
+          title: "Error fetching data",
+          description: "Could not load business settings.",
+          variant: "destructive",
+        })
+      } finally {
+        setLoading(false)
+      }
+    }
+    loadBusinessData()
+  }, [businessId, toast])
 
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  const handleSave = async () => {
+    if (!businessId) return
+    setSaving(true)
+    try {
+      await dbUpdate(`businesses/${businessId}`, formData)
+      toast({
+        title: "Settings Saved",
+        description: "Your branding settings have been updated successfully.",
+      })
+    } catch (error) {
+      toast({
+        title: "Error saving data",
+        description: "Could not save business settings.",
+        variant: "destructive",
+      })
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Branding Settings" description="Loading..." />
+        <Skeleton className="h-[400px] w-full" />
+      </div>
+    )
   }
 
   return (
@@ -150,7 +219,9 @@ export default function BrandingPage() {
             </CardContent>
           </Card>
 
-          <Button className="w-full">Save Changes</Button>
+          <Button className="w-full" onClick={handleSave} disabled={saving}>
+            {saving ? "Saving..." : "Save Changes"}
+          </Button>
         </div>
 
         {/* Previews */}
@@ -163,7 +234,7 @@ export default function BrandingPage() {
                 <CardDescription>Preview of your customer-facing page</CardDescription>
               </div>
               <Button variant="outline" size="sm" asChild>
-                <Link href={`/public/${business.slug}`}>
+                <Link href={`/public/${slug}`}>
                   <Eye className="h-4 w-4 mr-2" />
                   View Full
                 </Link>

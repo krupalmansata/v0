@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useState } from "react"
+import { use, useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Image as ImageIcon } from "lucide-react"
@@ -8,7 +8,11 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/page-header"
 import { StatusBadge } from "@/components/status-badge"
-import { jobs, staff } from "@/lib/mock-data"
+import { useAuth } from "@/lib/auth-context"
+import { database } from "@/lib/firebase"
+import { ref, onValue, update } from "firebase/database"
+import { useToast } from "@/components/ui/use-toast"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   Select,
   SelectContent,
@@ -35,8 +39,81 @@ const statusSteps = [
 export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
-  const job = jobs.find((j) => j.id === id)
-  const [currentStatus, setCurrentStatus] = useState(job?.status || "new")
+  const { userData } = useAuth()
+  const businessId = userData?.businessId
+  const { toast } = useToast()
+
+  const [job, setJob] = useState<any>(null)
+  const [staff, setStaff] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [updating, setUpdating] = useState(false)
+  const [reassignId, setReassignId] = useState("")
+
+  useEffect(() => {
+    if (!businessId) return
+
+    const jobRef = ref(database, `jobs/${businessId}/${id}`)
+    const unsubscribeJob = onValue(jobRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setJob({ id: snapshot.key, ...snapshot.val() })
+      } else {
+        setJob(null)
+      }
+      setLoading(false)
+    })
+
+    const unsubscribeStaff = onValue(ref(database, `staff/${businessId}`), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val()
+        setStaff(Object.keys(data).map(key => ({ id: key, ...data[key] })).filter(s => s.status === "active"))
+      } else setStaff([])
+    })
+
+    return () => {
+      unsubscribeJob()
+      unsubscribeStaff()
+    }
+  }, [businessId, id])
+
+  const updateStatus = async (newStatus: string) => {
+    if (!businessId || !job) return
+    setUpdating(true)
+    try {
+      await update(ref(database, `jobs/${businessId}/${id}`), { status: newStatus })
+      toast({ title: "Status Updated", description: `Job marked as ${newStatus}.` })
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to update status", variant: "destructive" })
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  const handleReassign = async () => {
+    if (!businessId || !job || !reassignId) return
+    setUpdating(true)
+    try {
+      const selectedMember = staff.find(s => s.id === reassignId)
+      await update(ref(database, `jobs/${businessId}/${id}`), { 
+        assignedStaffId: reassignId,
+        assignedStaffName: selectedMember?.name || "",
+        status: job.status === "new" ? "assigned" : job.status
+      })
+      toast({ title: "Staff Reassigned", description: "Successfully assigned new staff member." })
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to reassign staff", variant: "destructive" })
+    } finally {
+      setUpdating(false)
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Job Details" description="Loading..." />
+        <Skeleton className="h-[400px] w-full" />
+      </div>
+    )
+  }
 
   if (!job) {
     return (
@@ -61,8 +138,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     )
   }
 
-  const currentStepIndex = statusSteps.findIndex((s) => s.key === currentStatus)
-  const activeStaff = staff.filter((s) => s.status === "active")
+  const currentStepIndex = statusSteps.findIndex((s) => s.key === job.status)
 
   return (
     <div className="space-y-6">
@@ -73,7 +149,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           </Link>
         </Button>
         <PageHeader title={`Job ${job.id}`} description={job.serviceType}>
-          <StatusBadge status={currentStatus} />
+          <StatusBadge status={job.status} />
         </PageHeader>
       </div>
 
@@ -103,7 +179,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                     {index < statusSteps.length - 1 && (
                       <div
                         className={`h-0.5 w-12 sm:w-16 lg:w-20 mx-2 ${
-                          index < currentStepIndex ? "bg-foreground" : "bg-muted"
+                          currentStepIndex >= 0 && index < currentStepIndex ? "bg-foreground" : "bg-muted"
                         }`}
                       />
                     )}
@@ -187,7 +263,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               <CardTitle>Proof of Completion</CardTitle>
             </CardHeader>
             <CardContent>
-              {job.proofPhotos.length === 0 ? (
+              {!job.proofPhotos || job.proofPhotos.length === 0 ? (
                 <div className="text-center py-8 border-2 border-dashed rounded-lg">
                   <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground" />
                   <p className="text-sm text-muted-foreground mt-2">
@@ -196,7 +272,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {job.proofPhotos.map((photo, index) => (
+                  {job.proofPhotos.map((photo: any, index: number) => (
                     <div
                       key={index}
                       className="aspect-square rounded-lg bg-muted flex items-center justify-center"
@@ -217,31 +293,34 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               <CardTitle>Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {currentStatus === "new" && (
+              {job.status === "new" && (
                 <Button
                   className="w-full"
-                  onClick={() => setCurrentStatus("assigned")}
+                  disabled={updating}
+                  onClick={() => updateStatus("assigned")}
                 >
                   Mark as Assigned
                 </Button>
               )}
-              {currentStatus === "assigned" && (
+              {job.status === "assigned" && (
                 <Button
                   className="w-full"
-                  onClick={() => setCurrentStatus("in-progress")}
+                  disabled={updating}
+                  onClick={() => updateStatus("in-progress")}
                 >
                   Mark In Progress
                 </Button>
               )}
-              {currentStatus === "in-progress" && (
+              {job.status === "in-progress" && (
                 <Button
                   className="w-full"
-                  onClick={() => setCurrentStatus("completed")}
+                  disabled={updating}
+                  onClick={() => updateStatus("completed")}
                 >
                   Mark Completed
                 </Button>
               )}
-              {currentStatus === "completed" && (
+              {job.status === "completed" && (
                 <Button className="w-full" asChild>
                   <Link href="/invoice-preview">Generate Invoice</Link>
                 </Button>
@@ -259,19 +338,21 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                     <DialogDescription>Select a new staff member to assign to this job.</DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 pt-4">
-                    <Select>
+                    <Select onValueChange={setReassignId} value={reassignId}>
                       <SelectTrigger>
                         <SelectValue placeholder="Select staff member" />
                       </SelectTrigger>
                       <SelectContent>
-                        {activeStaff.map((member) => (
+                        {staff.map((member) => (
                           <SelectItem key={member.id} value={member.id}>
                             {member.name} - {member.role}
                           </SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                    <Button className="w-full">Confirm Reassignment</Button>
+                    <Button className="w-full" onClick={handleReassign} disabled={!reassignId || updating}>
+                      Confirm Reassignment
+                    </Button>
                   </div>
                 </DialogContent>
               </Dialog>

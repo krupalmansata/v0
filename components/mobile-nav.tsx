@@ -2,8 +2,8 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { Menu, X, ExternalLink } from "lucide-react"
-import { useState } from "react"
+import { Menu, ExternalLink } from "lucide-react"
+import { useState, useEffect } from "react"
 import {
   LayoutDashboard,
   Briefcase,
@@ -13,7 +13,9 @@ import {
   Palette,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { business } from "@/lib/mock-data"
+import { useAuth } from "@/lib/auth-context"
+import { database } from "@/lib/firebase"
+import { ref, onValue } from "firebase/database"
 import { Button } from "@/components/ui/button"
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from "@/components/ui/sheet"
 
@@ -29,6 +31,22 @@ const navItems = [
 export function MobileNav() {
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
+  const { userData } = useAuth()
+  const [businessName, setBusinessName] = useState("My Business")
+  const [businessSlug, setBusinessSlug] = useState("")
+
+  useEffect(() => {
+    if (!userData?.businessId) return
+    const businessRef = ref(database, `businesses/${userData.businessId}`)
+    const unsubscribe = onValue(businessRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val()
+        setBusinessName(data.name || "My Business")
+        setBusinessSlug(data.slug || userData.businessId)
+      }
+    })
+    return () => unsubscribe()
+  }, [userData?.businessId])
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
@@ -40,12 +58,14 @@ export function MobileNav() {
       </SheetTrigger>
       <SheetContent side="left" className="w-64 p-0">
         <SheetTitle className="sr-only">Navigation Menu</SheetTitle>
-        <SheetDescription className="sr-only">Main navigation for {business.name}</SheetDescription>
+        <SheetDescription className="sr-only">Main navigation for {businessName}</SheetDescription>
         <div className="flex items-center gap-3 h-16 px-6 border-b border-border">
           <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center">
-            <span className="text-background font-semibold text-sm">PS</span>
+            <span className="text-background font-semibold text-sm">
+              {businessName.substring(0, 2).toUpperCase()}
+            </span>
           </div>
-          <span className="font-semibold text-foreground">{business.name}</span>
+          <span className="font-semibold text-foreground truncate">{businessName}</span>
         </div>
 
         <nav className="px-3 py-4">
@@ -74,14 +94,16 @@ export function MobileNav() {
         </nav>
 
         <div className="absolute bottom-0 left-0 right-0 p-3 border-t border-border">
-          <Link
-            href={`/public/${business.slug}`}
-            onClick={() => setOpen(false)}
-            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-          >
-            <ExternalLink className="h-4 w-4" />
-            Preview Public Page
-          </Link>
+          {businessSlug && (
+            <Link
+              href={`/public/${businessSlug}`}
+              onClick={() => setOpen(false)}
+              className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Preview Public Page
+            </Link>
+          )}
         </div>
       </SheetContent>
     </Sheet>

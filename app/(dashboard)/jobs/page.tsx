@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Plus, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -8,24 +8,59 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent } from "@/components/ui/card"
 import { PageHeader } from "@/components/page-header"
 import { StatusBadge } from "@/components/status-badge"
-import { jobs } from "@/lib/mock-data"
+import { useAuth } from "@/lib/auth-context"
+import { database } from "@/lib/firebase"
+import { ref, onValue } from "firebase/database"
+import { Skeleton } from "@/components/ui/skeleton"
 
 const statusFilters = ["all", "new", "assigned", "in-progress", "completed"] as const
 
 export default function JobsPage() {
+  const { userData } = useAuth()
+  const businessId = userData?.businessId
+
   const [searchQuery, setSearchQuery] = useState("")
   const [activeFilter, setActiveFilter] = useState<typeof statusFilters[number]>("all")
+  
+  const [jobs, setJobs] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!businessId) return
+
+    const jobsRef = ref(database, `jobs/${businessId}`)
+    const unsubscribe = onValue(jobsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val()
+        setJobs(Object.keys(data).map(key => ({ id: key, ...data[key] })))
+      } else {
+        setJobs([])
+      }
+      setLoading(false)
+    })
+
+    return () => unsubscribe()
+  }, [businessId])
 
   const filteredJobs = jobs.filter((job) => {
     const matchesSearch =
-      job.customerName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.serviceType.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      job.id.toLowerCase().includes(searchQuery.toLowerCase())
+      (job.customerName?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+      (job.serviceType?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+      (job.id?.toLowerCase() || "").includes(searchQuery.toLowerCase())
 
     const matchesFilter = activeFilter === "all" || job.status === activeFilter
 
     return matchesSearch && matchesFilter
   })
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Jobs" description="Loading..." />
+        <Skeleton className="h-[400px] w-full" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">

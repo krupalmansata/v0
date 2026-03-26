@@ -1,13 +1,17 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Phone, MapPin, Calendar, Clock, MessageSquare } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/page-header"
 import { StatusBadge } from "@/components/status-badge"
-import { bookingRequests } from "@/lib/mock-data"
+import { useAuth } from "@/lib/auth-context"
+import { database } from "@/lib/firebase"
+import { ref, onValue, update } from "firebase/database"
+import { Skeleton } from "@/components/ui/skeleton"
+import { useToast } from "@/components/ui/use-toast"
 import {
   Dialog,
   DialogContent,
@@ -21,22 +25,63 @@ const statusFilters = ["all", "new", "contacted", "converted", "rejected"] as co
 
 export default function BookingsPage() {
   const router = useRouter()
+  const { userData } = useAuth()
+  const businessId = userData?.businessId
+  const { toast } = useToast()
+
   const [activeFilter, setActiveFilter] = useState<typeof statusFilters[number]>("all")
-  const [requests, setRequests] = useState(bookingRequests)
+  const [requests, setRequests] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!businessId) return
+    const bookingsRef = ref(database, `bookings/${businessId}`)
+    const unsubscribe = onValue(bookingsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val()
+        setRequests(Object.keys(data).map(key => ({ id: key, ...data[key] })))
+      } else {
+        setRequests([])
+      }
+      setLoading(false)
+    })
+
+    return () => unsubscribe()
+  }, [businessId])
 
   const filteredRequests = requests.filter(
     (req) => activeFilter === "all" || req.status === activeFilter
   )
 
-  const handleStatusChange = (id: string, newStatus: typeof requests[0]["status"]) => {
-    setRequests((prev) =>
-      prev.map((req) => (req.id === id ? { ...req, status: newStatus } : req))
-    )
+  const handleStatusChange = async (id: string, newStatus: string) => {
+    try {
+      await update(ref(database, `bookings/${businessId}/${id}`), { status: newStatus })
+      toast({ title: "Status Updated", description: `Booking marked as ${newStatus}.` })
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to update booking status", variant: "destructive" })
+    }
   }
 
-  const handleConvertToJob = (id: string) => {
-    handleStatusChange(id, "converted")
-    router.push("/jobs/new")
+  const handleConvertToJob = async (id: string, request: any) => {
+    // Navigate to job creation with booking data pre-filled via search params or state
+    // For now we just route and manually change status as requested
+    await handleStatusChange(id, "converted")
+    const searchParams = new URLSearchParams({
+      customerName: request.customerName || "",
+      customerPhone: request.customerPhone || "",
+      address: request.address || "",
+      notes: request.notes || "",
+    })
+    router.push(`/jobs/new?${searchParams.toString()}`)
+  }
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Booking Requests" description="Loading..." />
+        <Skeleton className="h-[200px] w-full" />
+      </div>
+    )
   }
 
   return (
@@ -122,7 +167,7 @@ export default function BookingsPage() {
                       <>
                         <Button
                           size="sm"
-                          onClick={() => handleConvertToJob(request.id)}
+                          onClick={() => handleConvertToJob(request.id, request)}
                         >
                           Convert to Job
                         </Button>
@@ -146,7 +191,7 @@ export default function BookingsPage() {
                       <>
                         <Button
                           size="sm"
-                          onClick={() => handleConvertToJob(request.id)}
+                          onClick={() => handleConvertToJob(request.id, request)}
                         >
                           Convert to Job
                         </Button>

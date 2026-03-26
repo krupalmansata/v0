@@ -1,3 +1,6 @@
+"use client"
+
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import { Briefcase, CalendarCheck, Users, FileText, Plus, Eye, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -5,14 +8,90 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/page-header"
 import { StatCard } from "@/components/stat-card"
 import { StatusBadge } from "@/components/status-badge"
-import { jobs, bookingRequests, staff, invoices, business } from "@/lib/mock-data"
+import { useAuth } from "@/lib/auth-context"
+import { database } from "@/lib/firebase"
+import { ref, onValue } from "firebase/database"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function DashboardPage() {
-  const todaysJobs = jobs.filter((job) => job.scheduledDate === "2026-03-19")
+  const { userData } = useAuth()
+  const businessId = userData?.businessId
+  
+  const [slug, setSlug] = useState("")
+  const [jobs, setJobs] = useState<any[]>([])
+  const [bookingRequests, setBookingRequests] = useState<any[]>([])
+  const [staff, setStaff] = useState<any[]>([])
+  const [invoices, setInvoices] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    if (!businessId) return
+
+    const jobsRef = ref(database, `jobs/${businessId}`)
+    const bookingsRef = ref(database, `bookings/${businessId}`)
+    const invoicesRef = ref(database, `invoices/${businessId}`)
+    const businessRef = ref(database, `businesses/${businessId}`)
+
+    const unsubscribeJobs = onValue(jobsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val()
+        setJobs(Object.keys(data).map(key => ({ id: key, ...data[key] })))
+      } else setJobs([])
+      setLoading(false)
+    })
+
+    const unsubscribeBookings = onValue(bookingsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val()
+        setBookingRequests(Object.keys(data).map(key => ({ id: key, ...data[key] })))
+      } else setBookingRequests([])
+    })
+
+    const unsubscribeStaff = onValue(ref(database, `staff/${businessId}`), (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val()
+        setStaff(Object.keys(data).map(key => ({ id: key, ...data[key] })))
+      } else setStaff([])
+    })
+
+    const unsubscribeInvoices = onValue(invoicesRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const data = snapshot.val()
+        setInvoices(Object.keys(data).map(key => ({ id: key, ...data[key] })))
+      } else setInvoices([])
+    })
+
+    const unsubscribeBusiness = onValue(businessRef, (snapshot) => {
+      if (snapshot.exists()) {
+        setSlug(snapshot.val().slug || businessId)
+      }
+    })
+
+    return () => {
+      unsubscribeJobs()
+      unsubscribeBookings()
+      unsubscribeStaff()
+      unsubscribeInvoices()
+      unsubscribeBusiness()
+    }
+  }, [businessId])
+
+  const todayStr = new Date().toISOString().split("T")[0]
+  const todaysJobs = jobs.filter((job) => job.scheduledDate === todayStr)
   const pendingBookings = bookingRequests.filter((req) => req.status === "new")
   const activeStaff = staff.filter((s) => s.status === "active")
   const recentInvoices = invoices.slice(0, 3)
   const recentBookings = bookingRequests.slice(0, 4)
+
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <PageHeader title="Dashboard" description="Loading..." />
+        <Skeleton className="h-[200px] w-full" />
+        <Skeleton className="h-[400px] w-full" />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -42,7 +121,7 @@ export default function DashboardPage() {
           </Link>
         </Button>
         <Button variant="outline" asChild>
-          <Link href={`/public/${business.slug}`}>
+          <Link href={`/public/${slug}`}>
             <Eye className="h-4 w-4 mr-2" />
             Preview Public Page
           </Link>
@@ -197,7 +276,7 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-3">
                     <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center">
                       <span className="text-sm font-medium">
-                        {member.name.split(" ").map((n) => n[0]).join("")}
+                        {(member.name || "?").split(" ").map((n: string) => n[0]).join("")}
                       </span>
                     </div>
                     <div>
@@ -206,7 +285,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    {member.jobsToday} jobs today
+                    {jobs.filter((j) => j.assignedStaffId === member.id && j.scheduledDate === todayStr).length} jobs today
                   </span>
                 </div>
               ))}

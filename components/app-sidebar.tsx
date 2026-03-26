@@ -2,6 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
+import { useState, useEffect } from "react"
 import {
   LayoutDashboard,
   Briefcase,
@@ -12,7 +13,9 @@ import {
   ExternalLink,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { business } from "@/lib/mock-data"
+import { useAuth } from "@/lib/auth-context"
+import { database } from "@/lib/firebase"
+import { ref, onValue } from "firebase/database"
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -25,14 +28,25 @@ const navItems = [
 
 export function AppSidebar() {
   const pathname = usePathname()
+  const { userData } = useAuth()
+  const [business, setBusiness] = useState<any>(null)
+
+  useEffect(() => {
+    if (!userData?.businessId) return
+    const businessRef = ref(database, `businesses/${userData.businessId}`)
+    const unsub = onValue(businessRef, snap => {
+      if (snap.exists()) setBusiness(snap.val())
+    })
+    return () => unsub()
+  }, [userData?.businessId])
 
   return (
     <aside className="hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-card border-r border-border">
       <div className="flex items-center gap-3 h-16 px-6 border-b border-border">
         <div className="w-8 h-8 rounded-lg bg-foreground flex items-center justify-center">
-          <span className="text-background font-semibold text-sm">PS</span>
+          <span className="text-background font-semibold text-sm">{business?.name?.[0] || "B"}</span>
         </div>
-        <span className="font-semibold text-foreground">{business.name}</span>
+        <span className="font-semibold text-foreground">{business?.name || "Loading..."}</span>
       </div>
 
       <nav className="flex-1 px-3 py-4">
@@ -60,13 +74,15 @@ export function AppSidebar() {
       </nav>
 
       <div className="p-3 border-t border-border">
-        <Link
-          href={`/public/${business.slug}`}
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
-        >
-          <ExternalLink className="h-4 w-4" />
-          Preview Public Page
-        </Link>
+        {business && (
+          <Link
+            href={`/public/${business.slug}`}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-secondary hover:text-foreground transition-colors"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Preview Public Page
+          </Link>
+        )}
       </div>
     </aside>
   )

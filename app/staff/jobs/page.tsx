@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
 import {
   Phone,
@@ -17,29 +17,61 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Textarea } from "@/components/ui/textarea"
 import { StatusBadge } from "@/components/status-badge"
-import { jobs } from "@/lib/mock-data"
+import { useAuth } from "@/lib/auth-context"
+import { ref, onValue, update } from "firebase/database"
+import { database } from "@/lib/firebase"
+import { useToast } from "@/components/ui/use-toast"
 
 export default function StaffJobsPage() {
+  const { userData } = useAuth()
+  const { toast } = useToast()
+  const [jobs, setJobs] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
   const [selectedJob, setSelectedJob] = useState<string | null>(null)
-  const [jobStatuses, setJobStatuses] = useState<Record<string, string>>({})
+  
+  useEffect(() => {
+    if (!userData?.businessId) {
+      setLoading(false)
+      return
+    }
+    const unsub = onValue(ref(database, "jobs/" + userData.businessId), snap => {
+      if (snap.exists()) {
+        const data = snap.val()
+        const jobsList = Object.keys(data).map(key => ({ id: key, ...data[key] }))
+        const active = jobsList.filter((j: any) => j.assignedStaffId && ["assigned", "in-progress"].includes(j.status))
+        setJobs(active)
+      } else {
+        setJobs([])
+      }
+      setLoading(false)
+    })
+    return () => unsub()
+  }, [userData])
   const [uploadedPhotos, setUploadedPhotos] = useState<Record<string, number>>({})
 
-  // Filter jobs assigned to staff (simulating logged-in staff member)
-  const assignedJobs = jobs.filter(
-    (job) => job.assignedStaffId && ["assigned", "in-progress"].includes(job.status)
-  )
-
-  const getJobStatus = (jobId: string, originalStatus: string) => {
-    return jobStatuses[jobId] || originalStatus
+  const getJobStatus = (jobId: string) => {
+    return jobs.find((j) => j.id === jobId)?.status ?? "assigned"
   }
 
-  const handleStartJob = (jobId: string) => {
-    setJobStatuses((prev) => ({ ...prev, [jobId]: "in-progress" }))
+  const handleStartJob = async (jobId: string) => {
+    if (!userData?.businessId) return
+    try {
+      await update(ref(database, `jobs/${userData.businessId}/${jobId}`), { status: "in-progress" })
+    } catch (error) {
+      console.error("Failed to start job:", error)
+      toast({ title: "Error", description: "Failed to start job. Please try again.", variant: "destructive" })
+    }
   }
 
-  const handleCompleteJob = (jobId: string) => {
-    setJobStatuses((prev) => ({ ...prev, [jobId]: "completed" }))
-    setSelectedJob(null)
+  const handleCompleteJob = async (jobId: string) => {
+    if (!userData?.businessId) return
+    try {
+      await update(ref(database, `jobs/${userData.businessId}/${jobId}`), { status: "completed" })
+      setSelectedJob(null)
+    } catch (error) {
+      console.error("Failed to complete job:", error)
+      toast({ title: "Error", description: "Failed to complete job. Please try again.", variant: "destructive" })
+    }
   }
 
   const handleUploadPhoto = (jobId: string) => {
@@ -52,8 +84,8 @@ export default function StaffJobsPage() {
   const currentJob = selectedJob ? jobs.find((j) => j.id === selectedJob) : null
 
   if (currentJob) {
-    const currentStatus = getJobStatus(currentJob.id, currentJob.status)
-    const photoCount = uploadedPhotos[currentJob.id] || currentJob.proofPhotos.length
+    const currentStatus = getJobStatus(currentJob.id)
+    const photoCount = uploadedPhotos[currentJob.id] ?? (currentJob.proofPhotos?.length || 0)
 
     return (
       <div className="min-h-screen bg-muted">
@@ -199,7 +231,7 @@ export default function StaffJobsPage() {
           <div>
             <h1 className="text-lg font-semibold">My Jobs</h1>
             <p className="text-sm text-muted-foreground">
-              {assignedJobs.length} assigned jobs
+              {jobs.length} assigned jobs
             </p>
           </div>
           <Button variant="outline" size="sm" asChild>
@@ -210,15 +242,15 @@ export default function StaffJobsPage() {
 
       {/* Jobs List */}
       <main className="p-4 space-y-3">
-        {assignedJobs.length === 0 ? (
+        {jobs.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
               <p className="text-muted-foreground">No jobs assigned to you</p>
             </CardContent>
           </Card>
         ) : (
-          assignedJobs.map((job) => {
-            const currentStatus = getJobStatus(job.id, job.status)
+          jobs.map((job) => {
+            const currentStatus = getJobStatus(job.id)
             return (
               <Card
                 key={job.id}

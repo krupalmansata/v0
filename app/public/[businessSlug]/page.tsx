@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect, use } from "react"
 import { Briefcase, Phone, Mail, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,10 +14,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { business, serviceTypes } from "@/lib/mock-data"
+import { database } from "@/lib/firebase"
+import { ref, get, push, set } from "firebase/database"
+import { Skeleton } from "@/components/ui/skeleton"
 
-export default function PublicBookingPage() {
+export default function PublicBookingPage({ params }: { params: Promise<{ businessSlug: string }> }) {
+  const { businessSlug } = use(params)
+  
   const [submitted, setSubmitted] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [businessData, setBusinessData] = useState<any>(null)
+  const [businessId, setBusinessId] = useState<string | null>(null)
+  
   const [formData, setFormData] = useState({
     name: "",
     phone: "",
@@ -28,13 +36,95 @@ export default function PublicBookingPage() {
     notes: "",
   })
 
+  const serviceTypes = ["AC Servicing", "Plumbing", "Electrical", "Cleaning", "Pest Control", "Other"]
+
+  const [loadingBusiness, setLoadingBusiness] = useState(true)
+  const [businessNotFound, setBusinessNotFound] = useState(false)
+
+  useEffect(() => {
+    async function loadBusinessInfo() {
+      try {
+        // For slug to businessId resolution, look through all businesses.
+        // Ideally move to a slug-index node `/slugIndex/${slug}` → businessId for O(1) lookup.
+        const businessesRef = ref(database, 'businesses')
+        const snapshot = await get(businessesRef)
+        if (snapshot.exists()) {
+          const businesses = snapshot.val()
+          for (const [id, data] of Object.entries(businesses)) {
+            if ((data as any).slug === businessSlug || id === businessSlug) {
+              setBusinessId(id)
+              setBusinessData(data)
+              return
+            }
+          }
+        }
+        setBusinessNotFound(true)
+      } catch (err) {
+        console.error("Failed to load business info", err)
+        setBusinessNotFound(true)
+      } finally {
+        setLoadingBusiness(false)
+      }
+    }
+    loadBusinessInfo()
+  }, [businessSlug])
+
   const handleChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setSubmitted(true)
+    if (!businessId) return
+    setLoading(true)
+    
+    try {
+      const bookingsRef = ref(database, `bookings/${businessId}`)
+      const newBookingRef = push(bookingsRef)
+      
+      await set(newBookingRef, {
+        customerName: formData.name,
+        customerPhone: formData.phone,
+        address: formData.address,
+        serviceType: formData.serviceType,
+        preferredDate: formData.preferredDate,
+        preferredTime: formData.preferredTime,
+        notes: formData.notes,
+        status: "new",
+        source: "Public Page",
+        createdAt: new Date().toISOString()
+      })
+      
+      setSubmitted(true)
+    } catch (error) {
+      console.error("Booking error:", error)
+      alert("Failed to submit your request. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loadingBusiness) {
+    return (
+      <div className="min-h-screen bg-muted p-8">
+        <Skeleton className="h-[600px] max-w-2xl mx-auto" />
+      </div>
+    )
+  }
+
+  if (businessNotFound || !businessData) {
+    return (
+      <div className="min-h-screen bg-muted flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardContent className="p-8 text-center">
+            <h2 className="text-xl font-bold">Page Not Found</h2>
+            <p className="text-muted-foreground mt-2">
+              This booking page does not exist or may have been removed.
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+    )
   }
 
   if (submitted) {
@@ -62,14 +152,17 @@ export default function PublicBookingPage() {
   return (
     <div className="min-h-screen bg-muted">
       {/* Header */}
-      <header className="bg-background border-b">
+      <header className="bg-background border-b" style={{ borderColor: businessData.primaryColor }}>
         <div className="max-w-2xl mx-auto px-4 py-6">
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-lg bg-foreground flex items-center justify-center">
-              <Briefcase className="h-6 w-6 text-background" />
+            <div 
+              className="w-12 h-12 rounded-lg flex items-center justify-center text-white font-bold"
+              style={{ backgroundColor: businessData.primaryColor || "#0f172a" }}
+            >
+              {businessData.name?.substring(0, 2).toUpperCase() || "BZ"}
             </div>
             <div>
-              <h1 className="text-xl font-bold">{business.name}</h1>
+              <h1 className="text-xl font-bold">{businessData.name}</h1>
               <p className="text-sm text-muted-foreground">Professional Service Solutions</p>
             </div>
           </div>
@@ -185,8 +278,8 @@ export default function PublicBookingPage() {
                 />
               </div>
 
-              <Button type="submit" className="w-full" size="lg">
-                Submit Request
+              <Button type="submit" className="w-full" size="lg" disabled={loading}>
+                {loading ? "Submitting..." : "Submit Request"}
               </Button>
             </form>
           </CardContent>
@@ -198,14 +291,18 @@ export default function PublicBookingPage() {
             We will contact you shortly to confirm your appointment.
           </p>
           <div className="flex items-center justify-center gap-6 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <Phone className="h-4 w-4" />
-              <span>{business.phone}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Mail className="h-4 w-4" />
-              <span>{business.email}</span>
-            </div>
+            {businessData.phone && (
+              <div className="flex items-center gap-2">
+                <Phone className="h-4 w-4" />
+                <span>{businessData.phone}</span>
+              </div>
+            )}
+            {businessData.email && (
+              <div className="flex items-center gap-2">
+                <Mail className="h-4 w-4" />
+                <span>{businessData.email}</span>
+              </div>
+            )}
           </div>
         </div>
       </main>
