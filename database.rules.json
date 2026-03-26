@@ -1,0 +1,51 @@
+{
+  "rules": {
+    ".read": false,
+    ".write": false,
+
+    "users": {
+      "$uid": {
+        ".read": "auth !== null && auth.uid === $uid",
+        ".write": "auth !== null && auth.uid === $uid"
+      }
+    },
+
+    "businesses": {
+      ".read": true,
+      "$businessId": {
+        ".write": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId"
+      }
+    },
+
+    "jobs": {
+      "$businessId": {
+        ".read": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId",
+        ".write": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId"
+      }
+    },
+
+    "bookings": {
+      "$businessId": {
+        ".read": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId",
+        "$bookingId": {
+          ".write": "(auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId) || (!data.exists() && newData.exists() && root.child('businesses').child($businessId).exists())",
+          ".validate": "newData.hasChildren(['customerName', 'customerPhone', 'serviceType', 'status'])"
+        }
+      }
+    },
+
+    "staff": {
+      "$businessId": {
+        ".read": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId",
+        ".write": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId"
+      }
+    },
+
+    "invoices": {
+      "$businessId": {
+        ".read": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId",
+        ".write": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId"
+      }
+    }
+  }
+}
