@@ -1,4 +1,5 @@
 "use client"
+import { useTranslations } from "next-intl"
 
 import { useState, useEffect, use } from "react"
 import { Briefcase, Phone, Mail, CheckCircle } from "lucide-react"
@@ -19,6 +20,7 @@ import { ref, get, push, set } from "firebase/database"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function PublicBookingPage({ params }: { params: Promise<{ businessSlug: string }> }) {
+  const t = useTranslations("Public")
   const { businessSlug } = use(params)
   
   const [submitted, setSubmitted] = useState(false)
@@ -36,7 +38,7 @@ export default function PublicBookingPage({ params }: { params: Promise<{ busine
     notes: "",
   })
 
-  const serviceTypes = ["AC Servicing", "Plumbing", "Electrical", "Cleaning", "Pest Control", "Other"]
+  const serviceTypes = ["AC Servicing", "Plumbing", "Electrical", "Cleaning", "Pest Control", "Other"] // Can be mapped to t(`services.${type}`) if needed // Can be mapped to t(`services.${type}`) if needed
 
   const [loadingBusiness, setLoadingBusiness] = useState(true)
   const [businessNotFound, setBusinessNotFound] = useState(false)
@@ -117,9 +119,9 @@ export default function PublicBookingPage({ params }: { params: Promise<{ busine
       <div className="min-h-screen bg-muted flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
           <CardContent className="p-8 text-center">
-            <h2 className="text-xl font-bold">Page Not Found</h2>
+            <h2 className="text-xl font-bold">{t("pageNotFound")}</h2>
             <p className="text-muted-foreground mt-2">
-              This booking page does not exist or may have been removed.
+              {t("pageNotFoundDesc")}
             </p>
           </CardContent>
         </Card>
@@ -135,13 +137,12 @@ export default function PublicBookingPage({ params }: { params: Promise<{ busine
             <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto">
               <CheckCircle className="h-8 w-8 text-green-600" />
             </div>
-            <h2 className="text-xl font-bold mt-4">Request Submitted</h2>
+            <h2 className="text-xl font-bold mt-4">{t("requestReceived")}</h2>
             <p className="text-muted-foreground mt-2">
-              Thank you for your booking request. We will contact you shortly to confirm
-              your appointment.
+              {t("thankYou")}
             </p>
             <Button className="mt-6" onClick={() => setSubmitted(false)}>
-              Submit Another Request
+              {t("submitAnother")}
             </Button>
           </CardContent>
         </Card>
@@ -173,23 +174,22 @@ export default function PublicBookingPage({ params }: { params: Promise<{ busine
       <main className="max-w-2xl mx-auto px-4 py-8">
         <Card>
           <CardHeader>
-            <CardTitle>Request a Service</CardTitle>
+            <CardTitle>{t("requestService")}</CardTitle>
             <CardDescription>
-              Fill out the form below and we&apos;ll get back to you within 24 hours to
-              confirm your appointment.
+              {t("fillOutForm")}
             </CardDescription>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* Service Selection */}
               <div className="space-y-2">
-                <Label htmlFor="serviceType">Service Type</Label>
+                <Label htmlFor="serviceType">{t("serviceType")}</Label>
                 <Select
                   value={formData.serviceType}
                   onValueChange={(value) => handleChange("serviceType", value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select the service you need" />
+                    <SelectValue placeholder={t("selectService")} />
                   </SelectTrigger>
                   <SelectContent>
                     {serviceTypes.map((type) => (
@@ -204,28 +204,28 @@ export default function PublicBookingPage({ params }: { params: Promise<{ busine
               {/* Contact Information */}
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Your Name</Label>
+                  <Label htmlFor="name">{t("yourName")}</Label>
                   <Input
                     id="name"
-                    placeholder="Enter your full name"
+                    placeholder={t("enterName")}
                     value={formData.name}
                     onChange={(e) => handleChange("name", e.target.value)}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
+                  <Label htmlFor="phone">{t("phoneNumber")}</Label>
                   <Input
                     id="phone"
                     type="tel"
-                    placeholder="(555) 000-0000"
+                    placeholder={t("enterPhone")}
                     value={formData.phone}
                     onChange={(e) => handleChange("phone", e.target.value)}
                     required
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="address">Service Address</Label>
+                  <Label htmlFor="address">{t("serviceAddress")}</Label>
                   <Input
                     id="address"
                     placeholder="Enter the address for the service"
@@ -239,7 +239,7 @@ export default function PublicBookingPage({ params }: { params: Promise<{ busine
               {/* Scheduling */}
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="preferredDate">Preferred Date</Label>
+                  <Label htmlFor="preferredDate">{t("preferredDate")}</Label>
                   <Input
                     id="preferredDate"
                     type="date"
@@ -248,19 +248,19 @@ export default function PublicBookingPage({ params }: { params: Promise<{ busine
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="preferredTime">Preferred Time</Label>
+                  <Label htmlFor="preferredTime">{t("preferredTime")}</Label>
                   <Select
                     value={formData.preferredTime}
                     onValueChange={(value) => handleChange("preferredTime", value)}
                   >
                     <SelectTrigger>
-                      <SelectValue placeholder="Select time" />
+                      <SelectValue placeholder={t("selectTime")} />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Morning">Morning (8AM - 12PM)</SelectItem>
-                      <SelectItem value="Afternoon">Afternoon (12PM - 5PM)</SelectItem>
-                      <SelectItem value="Evening">Evening (5PM - 8PM)</SelectItem>
-                      <SelectItem value="Flexible">Flexible</SelectItem>
+                      <SelectItem value="Morning">{t("morning")}</SelectItem>
+                      <SelectItem value="Afternoon">{t("afternoon")}</SelectItem>
+                      <SelectItem value="Evening">{t("evening")}</SelectItem>
+                      <SelectItem value="Flexible">{t("flexible")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -268,10 +268,10 @@ export default function PublicBookingPage({ params }: { params: Promise<{ busine
 
               {/* Notes */}
               <div className="space-y-2">
-                <Label htmlFor="notes">Additional Notes (Optional)</Label>
+                <Label htmlFor="notes">{t("notes")}</Label>
                 <Textarea
                   id="notes"
-                  placeholder="Any special instructions or details about your request"
+                  placeholder={t("notesPlaceholder")}
                   rows={3}
                   value={formData.notes}
                   onChange={(e) => handleChange("notes", e.target.value)}
@@ -279,7 +279,7 @@ export default function PublicBookingPage({ params }: { params: Promise<{ busine
               </div>
 
               <Button type="submit" className="w-full" size="lg" disabled={loading}>
-                {loading ? "Submitting..." : "Submit Request"}
+                {loading ? t("submitting") : t("submitRequest")}
               </Button>
             </form>
           </CardContent>

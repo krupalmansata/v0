@@ -56,7 +56,7 @@ This file is the execution checklist for adding JSON-based English and Arabic su
 
 ## Phase 4 - Public And Customer-Facing Surface
 
-- [ ] Update `app/public/[businessSlug]/page.tsx` for all public booking copy, service type labels, form placeholders, success states, business-not-found states, and full RTL public layout behavior.
+- [x] Update `app/public/[businessSlug]/page.tsx` for all public booking copy, service type labels, form placeholders, success states, business-not-found states, and full RTL public layout behavior.
 
 ## Phase 5 - Documents And Business Settings
 
@@ -65,8 +65,8 @@ This file is the execution checklist for adding JSON-based English and Arabic su
 
 ## Phase 6 - Notifications And Background Messaging
 
-- [ ] Update `hooks/use-fcm.ts` for localized fallback notification title/body handling and locale-aware foreground toasts.
-- [ ] Update `public/firebase-messaging-sw.js` for localized fallback background notification text and locale-aware deep-link defaults if needed.
+- [x] Update `hooks/use-fcm.ts` for localized fallback notification title/body handling and locale-aware foreground toasts.
+- [x] Update `public/firebase-messaging-sw.js` for localized fallback background notification text and locale-aware deep-link defaults if needed.
 
 ## Phase 7 - Persistence, QA, And Rollout Safety
 

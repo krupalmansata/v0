@@ -13,6 +13,7 @@ import { useAuth } from "@/lib/auth-context"
 import { dbGet, dbUpdate } from "@/lib/db"
 import { useToast } from "@/components/ui/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useTranslations } from "next-intl"
 
 const colorPresets = [
   { name: "Dark", value: "#0f172a" },
@@ -23,6 +24,7 @@ const colorPresets = [
 ]
 
 export default function BrandingPage() {
+  const t = useTranslations("Branding")
   const { userData } = useAuth()
   const businessId = userData?.businessId
   const { toast } = useToast()
@@ -57,8 +59,8 @@ export default function BrandingPage() {
         }
       } catch (error) {
         toast({
-          title: "Error fetching data",
-          description: "Could not load business settings.",
+          title: t("errorFetching"),
+          description: t("errorFetchingDesc"),
           variant: "destructive",
         })
       } finally {
@@ -78,13 +80,13 @@ export default function BrandingPage() {
     try {
       await dbUpdate(`businesses/${businessId}`, formData)
       toast({
-        title: "Settings Saved",
-        description: "Your branding settings have been updated successfully.",
+        title: t("settingsSaved"),
+        description: t("settingsSavedDesc"),
       })
     } catch (error) {
       toast({
-        title: "Error saving data",
-        description: "Could not save business settings.",
+        title: t("errorSaving"),
+        description: t("errorSavingDesc"),
         variant: "destructive",
       })
     } finally {
@@ -95,7 +97,7 @@ export default function BrandingPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Branding Settings" description="Loading..." />
+        <PageHeader title={t("title")} description={t("loading")} />
         <Skeleton className="h-[400px] w-full" />
       </div>
     )
@@ -104,8 +106,8 @@ export default function BrandingPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Branding Settings"
-        description="Customize your business branding for invoices and public pages"
+        title={t("title")}
+        description={t("description")}
       />
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -113,14 +115,12 @@ export default function BrandingPage() {
         <div className="space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Business Information</CardTitle>
-              <CardDescription>
-                Basic information displayed on invoices and booking page
-              </CardDescription>
+              <CardTitle>{t("businessInfo")}</CardTitle>
+              <CardDescription>{t("businessInfoDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">Business Name</Label>
+                <Label htmlFor="name">{t("businessNameLabel")}</Label>
                 <Input
                   id="name"
                   value={formData.name}
@@ -128,7 +128,7 @@ export default function BrandingPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="phone">Phone Number</Label>
+                <Label htmlFor="phone">{t("phoneLabel")}</Label>
                 <Input
                   id="phone"
                   value={formData.phone}
@@ -136,7 +136,7 @@ export default function BrandingPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
+                <Label htmlFor="email">{t("emailLabel")}</Label>
                 <Input
                   id="email"
                   type="email"
@@ -149,8 +149,8 @@ export default function BrandingPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Logo</CardTitle>
-              <CardDescription>Upload your business logo</CardDescription>
+              <CardTitle>{t("logo")}</CardTitle>
+              <CardDescription>{t("logoDesc")}</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="border-2 border-dashed rounded-lg p-8 text-center">
@@ -158,7 +158,7 @@ export default function BrandingPage() {
                 <p className="text-sm text-muted-foreground mt-2">
                   Click to upload or drag and drop
                 </p>
-                <p className="text-xs text-muted-foreground">PNG, JPG up to 2MB</p>
+                <p className="text-xs text-muted-foreground">{t("uploadLimits")}</p>
                 <Button variant="outline" size="sm" className="mt-4">
                   Choose File
                 </Button>
@@ -168,8 +168,8 @@ export default function BrandingPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Brand Color</CardTitle>
-              <CardDescription>Choose your primary brand color</CardDescription>
+              <CardTitle>{t("brandColor")}</CardTitle>
+              <CardDescription>{t("brandColorDesc")}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-2">
@@ -205,7 +205,7 @@ export default function BrandingPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Invoice Footer</CardTitle>
+              <CardTitle>{t("invoiceFooter")}</CardTitle>
               <CardDescription>
                 Text displayed at the bottom of invoices
               </CardDescription>
@@ -220,7 +220,7 @@ export default function BrandingPage() {
           </Card>
 
           <Button className="w-full" onClick={handleSave} disabled={saving}>
-            {saving ? "Saving..." : "Save Changes"}
+            {saving ? t("saving") : t("saveChanges")}
           </Button>
         </div>
 
@@ -230,12 +230,12 @@ export default function BrandingPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-base">Public Booking Page</CardTitle>
-                <CardDescription>Preview of your customer-facing page</CardDescription>
+                <CardTitle className="text-base">{t("publicPage")}</CardTitle>
+                <CardDescription>{t("publicPageDesc")}</CardDescription>
               </div>
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/public/${slug}`}>
-                  <Eye className="h-4 w-4 mr-2" />
+                  <Eye className="h-4 w-4 me-2" />
                   View Full
                 </Link>
               </Button>
@@ -254,7 +254,7 @@ export default function BrandingPage() {
                     </div>
                     <div>
                       <p className="font-medium">{formData.name}</p>
-                      <p className="text-xs text-muted-foreground">Request a Service</p>
+                      <p className="text-xs text-muted-foreground">{t("requestService")}</p>
                     </div>
                   </div>
                 </div>
@@ -274,12 +274,12 @@ export default function BrandingPage() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between">
               <div>
-                <CardTitle className="text-base">Invoice Preview</CardTitle>
-                <CardDescription>Preview of your invoice design</CardDescription>
+                <CardTitle className="text-base">{t("invoicePreview")}</CardTitle>
+                <CardDescription>{t("invoicePreviewDesc")}</CardDescription>
               </div>
               <Button variant="outline" size="sm" asChild>
                 <Link href="/invoice-preview">
-                  <Eye className="h-4 w-4 mr-2" />
+                  <Eye className="h-4 w-4 me-2" />
                   View Full
                 </Link>
               </Button>

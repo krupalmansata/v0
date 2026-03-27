@@ -6,10 +6,12 @@ import { ref, update } from "firebase/database"
 import { app, database } from "@/lib/firebase"
 import { useAuth } from "@/lib/auth-context"
 import { toast } from "sonner"
+import { useTranslations } from "next-intl"
 
 const VAPID_KEY = process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY
 
 export function useFCM() {
+  const t = useTranslations("Common")
   const { user } = useAuth()
 
   useEffect(() => {
@@ -65,7 +67,7 @@ export function useFCM() {
       // 4. Handle foreground messages (app is open and in focus)
       unsubscribeOnMessage = onMessage(messaging, (payload) => {
         console.log("[FCM] Foreground message received:", payload)
-        const title = payload.notification?.title || "New Notification"
+        const title = payload.notification?.title || t("newNotification")
         const body = payload.notification?.body || ""
 
         // Show a toast notification using Sonner (already in the project)
