@@ -1,15 +1,13 @@
 // middleware.ts
 import createMiddleware from 'next-intl/middleware';
+import {routing} from './src/i18n/routing';
  
-export default createMiddleware({
-  // A list of all locales that are supported
-  locales: ['en', 'ar'],
- 
-  // Used when no locale matches
-  defaultLocale: 'en'
-});
+export default createMiddleware(routing);
  
 export const config = {
-  // Match only internationalized pathnames
-  matcher: ['/', '/(ar|en)/:path*']
+  matcher: [
+    // Match all pathnames except those starting with:
+    // - api, _next, _vercel, or containing a dot (static files)
+    '/((?!api|_next|_vercel|.*\\..*).*)'
+  ]
 };

@@ -1,4 +1,5 @@
 "use client"
+import { useTranslations } from "next-intl"
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
@@ -23,6 +24,8 @@ import { database } from "@/lib/firebase"
 import { useToast } from "@/components/ui/use-toast"
 
 export default function StaffJobsPage() {
+  const t = useTranslations("StaffJobs");
+  const tStatus = useTranslations("Status");
   const { userData } = useAuth()
   const { toast } = useToast()
   const [jobs, setJobs] = useState<any[]>([])
@@ -59,7 +62,7 @@ export default function StaffJobsPage() {
       await update(ref(database, `jobs/${userData.businessId}/${jobId}`), { status: "in-progress" })
     } catch (error) {
       console.error("Failed to start job:", error)
-      toast({ title: "Error", description: "Failed to start job. Please try again.", variant: "destructive" })
+      toast({ title: tStatus("Error"), description: tStatus("Error"), variant: "destructive" })
     }
   }
 
@@ -70,7 +73,7 @@ export default function StaffJobsPage() {
       setSelectedJob(null)
     } catch (error) {
       console.error("Failed to complete job:", error)
-      toast({ title: "Error", description: "Failed to complete job. Please try again.", variant: "destructive" })
+      toast({ title: tStatus("Error"), description: tStatus("Error"), variant: "destructive" })
     }
   }
 
@@ -143,7 +146,7 @@ export default function StaffJobsPage() {
           {/* Proof Photos */}
           <Card>
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">Proof Photos</CardTitle>
+              <CardTitle className="text-base">{t("proofPhotos")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {photoCount > 0 ? (
@@ -169,8 +172,8 @@ export default function StaffJobsPage() {
                 onClick={() => handleUploadPhoto(currentJob.id)}
               >
                 <Camera className="h-4 w-4 mr-2" />
-                Upload Photo
-              </Button>
+                  {t("uploadPhoto")}
+                </Button>
             </CardContent>
           </Card>
 
@@ -178,11 +181,11 @@ export default function StaffJobsPage() {
           {currentStatus === "in-progress" && (
             <Card>
               <CardHeader className="pb-3">
-                <CardTitle className="text-base">Completion Notes</CardTitle>
+                <CardTitle className="text-base">{t("completionNotes")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Textarea
-                  placeholder="Add any notes about the completed work..."
+                  placeholder={t("addNotesPlaceholder")}
                   rows={3}
                 />
               </CardContent>
@@ -198,7 +201,7 @@ export default function StaffJobsPage() {
                 onClick={() => handleStartJob(currentJob.id)}
               >
                 <Play className="h-4 w-4 mr-2" />
-                Start Job
+                {t("startJob")}
               </Button>
             )}
             {currentStatus === "in-progress" && (
@@ -208,7 +211,7 @@ export default function StaffJobsPage() {
                 onClick={() => handleCompleteJob(currentJob.id)}
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
-                Mark Complete
+                {t("markComplete")}
               </Button>
             )}
             {currentStatus === "completed" && (
@@ -229,13 +232,13 @@ export default function StaffJobsPage() {
       <header className="sticky top-0 bg-background border-b z-10">
         <div className="flex items-center justify-between p-4">
           <div>
-            <h1 className="text-lg font-semibold">My Jobs</h1>
+            <h1 className="text-lg font-semibold">{t("myJobs")}</h1>
             <p className="text-sm text-muted-foreground">
-              {jobs.length} assigned jobs
+              {t("assignedJobsCount", { count: jobs.length })}
             </p>
           </div>
           <Button variant="outline" size="sm" asChild>
-            <Link href="/dashboard">Admin View</Link>
+            <Link href="/dashboard">{t("adminView")}</Link>
           </Button>
         </div>
       </header>
@@ -245,7 +248,7 @@ export default function StaffJobsPage() {
         {jobs.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <p className="text-muted-foreground">No jobs assigned to you</p>
+              <p className="text-muted-foreground">{t("noJobsAssigned")}</p>
             </CardContent>
           </Card>
         ) : (

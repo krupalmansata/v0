@@ -57,7 +57,17 @@
     "recentJobs": "Recent Jobs",
     "noJobsToday": "No jobs scheduled for today",
     "recentBookings": "Recent Bookings",
-    "noPendingRequests": "No pending booking requests"
+    "noPendingRequests": "No pending booking requests",
+    "quickActions": {
+      "newJob": "New Job",
+      "addStaff": "Add Staff",
+      "viewBookings": "View Bookings",
+      "publicPage": "Go to Public Page"
+    },
+    "viewAll": "View all",
+    "recentInvoicesCardTitle": "Recent Invoices",
+    "staffActivityCardTitle": "Staff Activity",
+    "jobsAssignedToday": "{count} jobs today"
   },
   "Auth": {
     "signIn": "Sign in to your account",
@@ -84,5 +94,61 @@
         "desc": "Create branded invoices ready to share with customers"
       }
     }
+  },
+  "Bookings": {
+    "title": "Booking Requests",
+    "description": "Manage customer inquiries and requests",
+    "noResults": "No booking requests found",
+    "filters": {
+      "all": "All",
+      "new": "New",
+      "contacted": "Contacted",
+      "converted": "Converted",
+      "rejected": "Rejected"
+    },
+    "actions": {
+      "viewDetails": "View Details",
+      "markContacted": "Mark Contacted",
+      "convertToJob": "Convert to Job",
+      "reject": "Reject"
+    },
+    "statusUpdated": "Status Updated",
+    "statusUpdatedDesc": "Booking marked as {status}.",
+    "updateError": "Failed to update booking status",
+    "details": {
+      "customer": "Customer",
+      "service": "Service",
+      "phone": "Phone",
+      "address": "Address",
+      "preferredDate": "Preferred Date",
+      "notes": "Notes"
+    }
+  },
+  "Jobs": {
+    "title": "Jobs",
+    "description": "Manage and track all your service jobs",
+    "newJob": "New Job",
+    "searchPlaceholder": "Search jobs...",
+    "noResults": "No jobs found matching your criteria",
+    "filters": {
+      "all": "All",
+      "new": "New",
+      "assigned": "Assigned",
+      "in-progress": "In Progress",
+      "completed": "Completed"
+    }
+  },
+  "StaffJobs": {
+    "myJobs": "My Jobs",
+    "assignedJobsCount": "{count} assigned jobs",
+    "noJobsAssigned": "No jobs assigned to you",
+    "adminView": "Admin View",
+    "proofPhotos": "Proof Photos",
+    "uploadPhoto": "Upload Photo",
+    "completionNotes": "Completion Notes",
+    "addNotesPlaceholder": "Add any notes about the completed work...",
+    "startJob": "Start Job",
+    "markComplete": "Mark Complete",
+    "completed": "Completed"
   }
 }

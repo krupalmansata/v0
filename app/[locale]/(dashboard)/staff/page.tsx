@@ -13,6 +13,7 @@ import { database } from "@/lib/firebase"
 import { ref, onValue, push, set } from "firebase/database"
 import { useToast } from "@/components/ui/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
+import { useTranslations } from "next-intl"
 import {
   Dialog,
   DialogContent,
@@ -31,6 +32,8 @@ import {
 
 export default function StaffPage() {
   const { userData } = useAuth()
+  const t = useTranslations("Staff")
+  const tStatus = useTranslations("Status")
   const businessId = userData?.businessId
   const { toast } = useToast()
 

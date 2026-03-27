@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
+import { Link } from "@/src/i18n/routing"
+import { useTranslations } from "next-intl"
 import { Plus, Search } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -16,6 +17,8 @@ import { Skeleton } from "@/components/ui/skeleton"
 const statusFilters = ["all", "new", "assigned", "in-progress", "completed"] as const
 
 export default function JobsPage() {
+  const tJobs = useTranslations("Jobs")
+  const tCommon = useTranslations("Common")
   const { userData } = useAuth()
   const businessId = userData?.businessId
 
@@ -56,7 +59,7 @@ export default function JobsPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Jobs" description="Loading..." />
+        <PageHeader title={tJobs("title")} description={tCommon("loading")} />
         <Skeleton className="h-[400px] w-full" />
       </div>
     )
@@ -64,7 +67,7 @@ export default function JobsPage() {
 
   return (
     <div className="space-y-6">
-      <PageHeader title="Jobs" description="Manage and track all your service jobs">
+      <PageHeader title={tJobs("title")} description={tJobs("description")}>
         <Button asChild>
           <Link href="/jobs/new">
             <Plus className="h-4 w-4 mr-2" />
@@ -76,12 +79,12 @@ export default function JobsPage() {
       {/* Search and Filters */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
         <div className="relative flex-1 max-w-sm">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute start-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search jobs..."
+            placeholder={tJobs("searchPlaceholder")}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-9"
+            className="ps-9"
           />
         </div>
         <div className="flex flex-wrap gap-2">
@@ -104,7 +107,7 @@ export default function JobsPage() {
         {filteredJobs.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <p className="text-muted-foreground">No jobs found matching your criteria</p>
+              <p className="text-muted-foreground">{tJobs("noResults")}</p>
             </CardContent>
           </Card>
         ) : (

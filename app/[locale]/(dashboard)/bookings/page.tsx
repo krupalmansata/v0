@@ -12,6 +12,7 @@ import { database } from "@/lib/firebase"
 import { ref, onValue, update } from "firebase/database"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useToast } from "@/components/ui/use-toast"
+import { useTranslations } from "next-intl"
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,8 @@ import {
 const statusFilters = ["all", "new", "contacted", "converted", "rejected"] as const
 
 export default function BookingsPage() {
+  const tBookings = useTranslations("Bookings")
+  const tCommon = useTranslations("Common")
   const router = useRouter()
   const { userData } = useAuth()
   const businessId = userData?.businessId
@@ -56,9 +59,9 @@ export default function BookingsPage() {
   const handleStatusChange = async (id: string, newStatus: string) => {
     try {
       await update(ref(database, `bookings/${businessId}/${id}`), { status: newStatus })
-      toast({ title: "Status Updated", description: `Booking marked as ${newStatus}.` })
+      toast({ title: tBookings("statusUpdated"), description: tBookings("statusUpdatedDesc", { status: tBookings(`filters.${newStatus}`) }) })
     } catch (error) {
-      toast({ title: "Error", description: "Failed to update booking status", variant: "destructive" })
+      toast({ title: tCommon("error"), description: tBookings("updateError"), variant: "destructive" })
     }
   }
 
@@ -78,7 +81,7 @@ export default function BookingsPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Booking Requests" description="Loading..." />
+        <PageHeader title={tBookings("title")} description={tCommon("loading")} />
         <Skeleton className="h-[200px] w-full" />
       </div>
     )
@@ -101,7 +104,7 @@ export default function BookingsPage() {
             onClick={() => setActiveFilter(filter)}
             className="capitalize"
           >
-            {filter}
+            {tBookings(`filters.${filter}`)}
           </Button>
         ))}
       </div>
@@ -111,7 +114,7 @@ export default function BookingsPage() {
         {filteredRequests.length === 0 ? (
           <Card>
             <CardContent className="p-8 text-center">
-              <p className="text-muted-foreground">No booking requests found</p>
+              <p className="text-muted-foreground">{tBookings("noResults")}</p>
             </CardContent>
           </Card>
         ) : (
@@ -169,22 +172,22 @@ export default function BookingsPage() {
                           size="sm"
                           onClick={() => handleConvertToJob(request.id, request)}
                         >
-                          Convert to Job
-                        </Button>
+                              {tBookings("actions.convertToJob")}
+                            </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleStatusChange(request.id, "contacted")}
                         >
-                          Mark Contacted
-                        </Button>
+                              {tBookings("actions.markContacted")}
+                            </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleStatusChange(request.id, "rejected")}
                         >
-                          Reject
-                        </Button>
+                              {tBookings("actions.reject")}
+                            </Button>
                       </>
                     )}
                     {request.status === "contacted" && (
@@ -193,15 +196,15 @@ export default function BookingsPage() {
                           size="sm"
                           onClick={() => handleConvertToJob(request.id, request)}
                         >
-                          Convert to Job
-                        </Button>
+                              {tBookings("actions.convertToJob")}
+                            </Button>
                         <Button
                           variant="ghost"
                           size="sm"
                           onClick={() => handleStatusChange(request.id, "rejected")}
                         >
-                          Reject
-                        </Button>
+                              {tBookings("actions.reject")}
+                            </Button>
                       </>
                     )}
                     {(request.status === "converted" ||
@@ -219,19 +222,19 @@ export default function BookingsPage() {
                           </DialogHeader>
                           <div className="space-y-4 pt-4">
                             <div>
-                              <p className="text-sm text-muted-foreground">Customer</p>
+                              <p className="text-sm text-muted-foreground">{tBookings("details.customer")}</p>
                               <p className="font-medium">{request.customerName}</p>
                             </div>
                             <div>
-                              <p className="text-sm text-muted-foreground">Service</p>
+                              <p className="text-sm text-muted-foreground">{tBookings("details.service")}</p>
                               <p className="font-medium">{request.serviceType}</p>
                             </div>
                             <div>
-                              <p className="text-sm text-muted-foreground">Phone</p>
+                              <p className="text-sm text-muted-foreground">{tBookings("details.phone")}</p>
                               <p className="font-medium">{request.customerPhone}</p>
                             </div>
                             <div>
-                              <p className="text-sm text-muted-foreground">Address</p>
+                              <p className="text-sm text-muted-foreground">{tBookings("details.address")}</p>
                               <p className="font-medium">{request.address}</p>
                             </div>
                             <div>
@@ -244,7 +247,7 @@ export default function BookingsPage() {
                             </div>
                             {request.notes && (
                               <div>
-                                <p className="text-sm text-muted-foreground">Notes</p>
+                                <p className="text-sm text-muted-foreground">{tBookings("details.notes")}</p>
                                 <p className="font-medium">{request.notes}</p>
                               </div>
                             )}

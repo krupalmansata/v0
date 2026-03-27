@@ -45,14 +45,14 @@ This file is the execution checklist for adding JSON-based English and Arabic su
 
 ## Phase 3 - Dashboard Shell And Core Admin Pages
 
-- [ ] Update `app/(dashboard)/layout.tsx` for RTL content offset, sidebar relationship, and toast position handling.
-- [ ] Update `app/(dashboard)/dashboard/page.tsx` for stat titles, section titles, descriptions, empty/loading states, CTA labels, fallback text, and mirrored directional icons.
-- [ ] Update `app/(dashboard)/bookings/page.tsx` for filter labels, dialog text, action labels, toast messages, request metadata, and RTL action stacking.
-- [ ] Update `app/(dashboard)/jobs/page.tsx` for search placeholder, filter labels, empty states, fallback values, search icon placement, and RTL list layout.
-- [ ] Update `app/(dashboard)/jobs/[id]/page.tsx` for status stepper labels, detail cards, dialog/select content, toast messages, schedule phrasing, fallback labels, and proof/notes sections.
-- [ ] Update `app/(dashboard)/jobs/new/page.tsx` for full form copy, service type labels, validation/toast text, preview card labels, and RTL form/preview layout.
-- [ ] Update `app/(dashboard)/staff/page.tsx` for form labels, dialog/select text, staff card labels, status copy, and toast messages.
-- [ ] Update `app/staff/jobs/page.tsx` for the staff mobile flow, action buttons, notes, empty/completed states, toast messages, and RTL mobile layout.
+- [x] Update `app/(dashboard)/layout.tsx` for RTL content offset, sidebar relationship, and toast position handling.
+- [x] Update `app/(dashboard)/dashboard/page.tsx` for stat titles, section titles, descriptions, empty/loading states, CTA labels, fallback text, and mirrored directional icons.
+- [x] Update `app/(dashboard)/bookings/page.tsx` for filter labels, dialog text, action labels, toast messages, request metadata, and RTL action stacking.
+- [x] Update `app/(dashboard)/jobs/page.tsx` for search placeholder, filter labels, empty states, fallback values, search icon placement, and RTL list layout.
+- [x] Update `app/(dashboard)/jobs/[id]/page.tsx` for status stepper labels, detail cards, dialog/select content, toast messages, schedule phrasing, fallback labels, and proof/notes sections.
+- [x] Update `app/(dashboard)/jobs/new/page.tsx` for full form copy, service type labels, validation/toast text, preview card labels, and RTL form/preview layout.
+- [x] Update `app/(dashboard)/staff/page.tsx` for form labels, dialog/select text, staff card labels, status copy, and toast messages.
+- [x] Update `app/staff/jobs/page.tsx` for the staff mobile flow, action buttons, notes, empty/completed states, toast messages, and RTL mobile layout.
 
 ## Phase 4 - Public And Customer-Facing Surface
 

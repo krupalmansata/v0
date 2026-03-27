@@ -14,6 +14,10 @@ const firebaseConfig = {
   databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
 };
 
+if (!firebaseConfig.apiKey) {
+  console.warn("Firebase API key is missing. Please check your environment variables.");
+}
+
 // Initialize Firebase only if it hasn't been initialized already (Prevents Next.js hot reload errors)
 const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 

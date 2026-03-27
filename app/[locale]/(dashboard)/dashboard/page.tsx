@@ -1,7 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
+import { Link } from "@/src/i18n/routing"
+import { useTranslations } from "next-intl"
 import { Briefcase, CalendarCheck, Users, FileText, Plus, Eye, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,6 +15,8 @@ import { ref, onValue } from "firebase/database"
 import { Skeleton } from "@/components/ui/skeleton"
 
 export default function DashboardPage() {
+  const tDashboard = useTranslations("Dashboard")
+  const tCommon = useTranslations("Common")
   const { userData } = useAuth()
   const businessId = userData?.businessId
   
@@ -86,7 +89,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <PageHeader title="Dashboard" description="Loading..." />
+        <PageHeader title={tDashboard("title")} description={tCommon("loading")} />
         <Skeleton className="h-[200px] w-full" />
         <Skeleton className="h-[400px] w-full" />
       </div>
@@ -96,28 +99,28 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <PageHeader
-        title="Dashboard"
-        description="Overview of your business activity"
+        title={tDashboard("title")}
+        description={tDashboard("description")}
       />
 
       {/* Quick Actions */}
       <div className="flex flex-wrap gap-2">
         <Button asChild>
           <Link href="/jobs/new">
-            <Plus className="h-4 w-4 mr-2" />
-            New Job
+            <Plus className="h-4 w-4 me-2" />
+            {tDashboard("quickActions.newJob")}
           </Link>
         </Button>
         <Button variant="outline" asChild>
           <Link href="/staff">
-            <Users className="h-4 w-4 mr-2" />
-            Add Staff
+            <Users className="h-4 w-4 me-2" />
+            {tDashboard("quickActions.addStaff")}
           </Link>
         </Button>
         <Button variant="outline" asChild>
           <Link href="/bookings">
-            <CalendarCheck className="h-4 w-4 mr-2" />
-            View Bookings
+            <CalendarCheck className="h-4 w-4 me-2" />
+            {tDashboard("quickActions.viewBookings")}
           </Link>
         </Button>
         <Button variant="outline" asChild>
@@ -143,7 +146,7 @@ export default function DashboardPage() {
           description="Awaiting response"
         />
         <StatCard
-          title="Active Staff"
+          title={tDashboard("stats.activeStaff")}
           value={activeStaff.length}
           icon={Users}
           description={`${staff.length} total members`}
@@ -163,8 +166,8 @@ export default function DashboardPage() {
             <CardTitle className="text-lg">Today&apos;s Jobs</CardTitle>
             <Button variant="ghost" size="sm" asChild>
               <Link href="/jobs">
-                View all
-                <ArrowRight className="h-4 w-4 ml-1" />
+                {tDashboard("viewAll")}
+                <ArrowRight className="h-4 w-4 ms-1 rtl:rotate-180" />
               </Link>
             </Button>
           </CardHeader>
@@ -185,7 +188,7 @@ export default function DashboardPage() {
                         {job.serviceType} - {job.scheduledTime}
                       </p>
                     </div>
-                    <StatusBadge status={job.status} className="ml-3 shrink-0" />
+                    <StatusBadge status={job.status} className="ms-3 shrink-0" />
                   </Link>
                 ))}
               </div>
@@ -199,8 +202,8 @@ export default function DashboardPage() {
             <CardTitle className="text-lg">Recent Booking Requests</CardTitle>
             <Button variant="ghost" size="sm" asChild>
               <Link href="/bookings">
-                View all
-                <ArrowRight className="h-4 w-4 ml-1" />
+                {tDashboard("viewAll")}
+                <ArrowRight className="h-4 w-4 ms-1 rtl:rotate-180" />
               </Link>
             </Button>
           </CardHeader>
@@ -217,7 +220,7 @@ export default function DashboardPage() {
                       {request.serviceType} - {request.preferredDate}
                     </p>
                   </div>
-                  <StatusBadge status={request.status} className="ml-3 shrink-0" />
+                  <StatusBadge status={request.status} className="ms-3 shrink-0" />
                 </div>
               ))}
             </div>
@@ -227,11 +230,11 @@ export default function DashboardPage() {
         {/* Recent Invoices */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Recent Invoices</CardTitle>
+            <CardTitle className="text-lg">{tDashboard("recentInvoicesCardTitle")}</CardTitle>
             <Button variant="ghost" size="sm" asChild>
               <Link href="/invoice-preview">
-                View all
-                <ArrowRight className="h-4 w-4 ml-1" />
+                {tDashboard("viewAll")}
+                <ArrowRight className="h-4 w-4 ms-1 rtl:rotate-180" />
               </Link>
             </Button>
           </CardHeader>
@@ -248,7 +251,7 @@ export default function DashboardPage() {
                       {invoice.customerName} - ${invoice.totalAmount}
                     </p>
                   </div>
-                  <StatusBadge status={invoice.status} className="ml-3 shrink-0" />
+                  <StatusBadge status={invoice.status} className="ms-3 shrink-0" />
                 </div>
               ))}
             </div>
@@ -258,11 +261,11 @@ export default function DashboardPage() {
         {/* Staff Activity */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg">Staff Activity</CardTitle>
+            <CardTitle className="text-lg">{tDashboard("staffActivityCardTitle")}</CardTitle>
             <Button variant="ghost" size="sm" asChild>
               <Link href="/staff">
-                View all
-                <ArrowRight className="h-4 w-4 ml-1" />
+                {tDashboard("viewAll")}
+                <ArrowRight className="h-4 w-4 ms-1 rtl:rotate-180" />
               </Link>
             </Button>
           </CardHeader>
@@ -285,7 +288,7 @@ export default function DashboardPage() {
                     </div>
                   </div>
                   <span className="text-sm text-muted-foreground">
-                    {jobs.filter((j) => j.assignedStaffId === member.id && j.scheduledDate === todayStr).length} jobs today
+                    {tDashboard("jobsAssignedToday", { count: jobs.filter((j) => j.assignedStaffId === member.id && j.scheduledDate === todayStr).length })}
                   </span>
                 </div>
               ))}

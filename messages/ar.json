@@ -57,7 +57,17 @@
     "recentJobs": "الوظائف الأخيرة",
     "noJobsToday": "لا توجد وظائف مجدولة لليوم",
     "recentBookings": "الحجوزات الأخيرة",
-    "noPendingRequests": "لا توجد طلبات حجز معلقة"
+    "noPendingRequests": "لا توجد طلبات حجز معلقة",
+    "quickActions": {
+      "newJob": "وظيفة جديدة",
+      "addStaff": "إضافة موظف",
+      "viewBookings": "عرض الحجوزات",
+      "publicPage": "انتقل إلى الصفحة العامة"
+    },
+    "viewAll": "عرض الكل",
+    "recentInvoicesCardTitle": "الفواتير الأخيرة",
+    "staffActivityCardTitle": "نشاط الموظفين",
+    "jobsAssignedToday": "وظائف اليوم {count}"
   },
   "Auth": {
     "signIn": "تسجيل الدخول إلى حسابك",
@@ -84,5 +94,61 @@
         "desc": "أنشئ فواتير ذات علامة تجارية جاهزة للمشاركة مع العملاء"
       }
     }
+  },
+  "Bookings": {
+    "title": "طلبات الحجز",
+    "description": "إدارة استفسارات وطلبات العملاء",
+    "noResults": "لم يتم العثور على طلبات حجز",
+    "filters": {
+      "all": "الكل",
+      "new": "جديد",
+      "contacted": "تم التواصل",
+      "converted": "إلى وظيفة",
+      "rejected": "مرفوض"
+    },
+    "actions": {
+      "viewDetails": "عرض التفاصيل",
+      "markContacted": "تحديد كتم التواصل",
+      "convertToJob": "تحويل إلى وظيفة",
+      "reject": "رفض"
+    },
+    "statusUpdated": "تم تحديث الحالة",
+    "statusUpdatedDesc": "تم تحديد الحجز كـ {status}.",
+    "updateError": "فشل تحديث حالة الحجز",
+    "details": {
+      "customer": "العميل",
+      "service": "الخدمة",
+      "phone": "الهاتف",
+      "address": "العنوان",
+      "preferredDate": "التاريخ المفضل",
+      "notes": "ملاحظات"
+    }
+  },
+  "Jobs": {
+    "title": "الوظائف",
+    "description": "إدارة وتتبع كافة الوظائف الخدمية",
+    "newJob": "وظيفة جديدة",
+    "searchPlaceholder": "البحث عن وظائف...",
+    "noResults": "لم يتم العثور على وظائف تطابق بحثك",
+    "filters": {
+      "all": "الكل",
+      "new": "جديد",
+      "assigned": "معين",
+      "in-progress": "قيد التنفيذ",
+      "completed": "مكتمل"
+    }
+  },
+  "StaffJobs": {
+    "myJobs": "وظائفي",
+    "assignedJobsCount": "{count} وظائف معينة",
+    "noJobsAssigned": "لا توجد وظائف معينة لك",
+    "adminView": "عرض الإدارة",
+    "proofPhotos": "صور الإثبات",
+    "uploadPhoto": "رفع صورة",
+    "completionNotes": "ملاحظات الإنجاز",
+    "addNotesPlaceholder": "أضف أي ملاحظات حول العمل المنجز...",
+    "startJob": "بدء الوظيفة",
+    "markComplete": "اكتمال",
+    "completed": "مكتمل"
   }
 }
