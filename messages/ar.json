@@ -203,7 +203,17 @@
     "totalDue": "المجمالۊ المستحق",
     "defaultFooter": "شًردا لتعاملكم معنا!",
     "selectPreview": "حدحد فاتۇرة لمعاۊلتها",
-    "draft": "مسوحدة"
+    "draft": "مسوحدة",
+    "shareWhatsApp": "واتساب",
+    "generating": "جاري التحميل...",
+    "pdfSuccess": "تم تحميل PDF",
+    "pdfSuccessDesc": "تم تحميل فاتورة PDF بنجاح.",
+    "pdfError": "فشل التحميل",
+    "pdfErrorDesc": "فشل في إنشاء PDF. حاول مرة أخرى.",
+    "shareError": "فشل المشاركة",
+    "shareErrorDesc": "فشل في مشاركة الفاتورة. حاول مرة أخرى.",
+    "imageDownloaded": "تم حفظ الصورة",
+    "imageDownloadedDesc": "تم حفظ صورة الفاتورة. أرفقها في واتساب للمشاركة."
   },
   "Branding": {
     "title": "إعدادات العلامة التجارية",

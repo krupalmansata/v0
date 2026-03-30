@@ -21,6 +21,16 @@ import {
   DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 const statusFilters = ["all", "new", "contacted", "converted", "rejected"] as const
 
@@ -35,6 +45,7 @@ export default function BookingsPage() {
   const [activeFilter, setActiveFilter] = useState<typeof statusFilters[number]>("all")
   const [requests, setRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
+  const [convertTarget, setConvertTarget] = useState<{ id: string; request: any } | null>(null)
 
   useEffect(() => {
     if (!businessId) return
@@ -65,14 +76,17 @@ export default function BookingsPage() {
     }
   }
 
-  const handleConvertToJob = async (id: string, request: any) => {
-    // Navigate to job creation with booking data pre-filled via search params or state
-    // For now we just route and manually change status as requested
-    await handleStatusChange(id, "converted")
+  const handleConvertToJob = (id: string, request: any) => {
+    // Navigate to job creation with all booking data pre-filled via search params.
+    // Booking status is marked "converted" only after the job is actually saved.
     const searchParams = new URLSearchParams({
+      bookingId: id,
       customerName: request.customerName || "",
       customerPhone: request.customerPhone || "",
       address: request.address || "",
+      serviceType: request.serviceType || "",
+      preferredDate: request.preferredDate || "",
+      preferredTime: request.preferredTime || "",
       notes: request.notes || "",
     })
     router.push(`/jobs/new?${searchParams.toString()}`)
@@ -170,7 +184,7 @@ export default function BookingsPage() {
                       <>
                         <Button
                           size="sm"
-                          onClick={() => handleConvertToJob(request.id, request)}
+                          onClick={() => setConvertTarget({ id: request.id, request })}
                         >
                               {tBookings("actions.convertToJob")}
                             </Button>
@@ -194,7 +208,7 @@ export default function BookingsPage() {
                       <>
                         <Button
                           size="sm"
-                          onClick={() => handleConvertToJob(request.id, request)}
+                          onClick={() => setConvertTarget({ id: request.id, request })}
                         >
                               {tBookings("actions.convertToJob")}
                             </Button>
@@ -262,6 +276,35 @@ export default function BookingsPage() {
           ))
         )}
       </div>
+
+      {/* Confirmation dialog for booking → job conversion */}
+      <AlertDialog
+        open={!!convertTarget}
+        onOpenChange={(open) => { if (!open) setConvertTarget(null) }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Convert Booking to Job?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The job creation form will open pre-filled with this booking&apos;s details.
+              The booking will be marked as <strong>converted</strong> only after the job is saved.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => {
+                if (convertTarget) {
+                  handleConvertToJob(convertTarget.id, convertTarget.request)
+                  setConvertTarget(null)
+                }
+              }}
+            >
+              Convert to Job
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

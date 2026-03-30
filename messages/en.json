@@ -203,7 +203,17 @@
     "totalDue": "Total Due",
     "defaultFooter": "Thank you for your business!",
     "selectPreview": "Select an invoice to preview",
-    "draft": "Draft"
+    "draft": "Draft",
+    "shareWhatsApp": "WhatsApp",
+    "generating": "Generating...",
+    "pdfSuccess": "PDF Downloaded",
+    "pdfSuccessDesc": "Invoice PDF has been downloaded successfully.",
+    "pdfError": "Download Failed",
+    "pdfErrorDesc": "Failed to generate PDF. Please try again.",
+    "shareError": "Share Failed",
+    "shareErrorDesc": "Failed to share invoice. Please try again.",
+    "imageDownloaded": "Image Downloaded",
+    "imageDownloadedDesc": "Invoice image saved. Attach it in WhatsApp to share."
   },
   "Branding": {
     "title": "Branding Settings",

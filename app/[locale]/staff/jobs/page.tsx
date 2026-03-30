@@ -1,7 +1,7 @@
 "use client"
 import { useTranslations } from "next-intl"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import {
   Phone,
@@ -21,6 +21,7 @@ import { StatusBadge } from "@/components/status-badge"
 import { useAuth } from "@/lib/auth-context"
 import { ref, onValue, update } from "firebase/database"
 import { database } from "@/lib/firebase"
+import { supabase } from "@/lib/supabase"
 import { useToast } from "@/components/ui/use-toast"
 
 export default function StaffJobsPage() {
@@ -31,6 +32,9 @@ export default function StaffJobsPage() {
   const [jobs, setJobs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedJob, setSelectedJob] = useState<string | null>(null)
+  const [uploading, setUploading] = useState(false)
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const selectedJobRef = useRef<string | null>(null)
   
   useEffect(() => {
     if (!userData?.businessId) {
@@ -50,8 +54,6 @@ export default function StaffJobsPage() {
     })
     return () => unsub()
   }, [userData])
-  const [uploadedPhotos, setUploadedPhotos] = useState<Record<string, number>>({})
-
   const getJobStatus = (jobId: string) => {
     return jobs.find((j) => j.id === jobId)?.status ?? "assigned"
   }
@@ -77,18 +79,48 @@ export default function StaffJobsPage() {
     }
   }
 
-  const handleUploadPhoto = (jobId: string) => {
-    setUploadedPhotos((prev) => ({
-      ...prev,
-      [jobId]: (prev[jobId] || 0) + 1,
-    }))
+  const handleUploadPhoto = () => {
+    fileInputRef.current?.click()
+  }
+
+  const handleFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    const jobId = selectedJobRef.current
+    if (!file || !jobId || !userData?.businessId) return
+    const job = jobs.find(j => j.id === jobId)
+    if (!job) return
+    setUploading(true)
+    try {
+      const ext = file.name.split('.').pop() || 'jpg'
+      const filePath = `job-photos/${userData.businessId}/${jobId}/${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage
+        .from('invoice-images')
+        .upload(filePath, file, { contentType: file.type, upsert: false })
+      if (uploadError) throw uploadError
+
+      const { data: urlData } = supabase.storage
+        .from('invoice-images')
+        .getPublicUrl(filePath)
+
+      const existingPhotos: string[] = job.proofPhotos || []
+      const updatedPhotos = [...existingPhotos, urlData.publicUrl]
+      await update(ref(database, `jobs/${userData.businessId}/${jobId}`), { proofPhotos: updatedPhotos })
+      toast({ title: t("uploadPhoto"), description: "Photo uploaded successfully" })
+    } catch (err: any) {
+      console.error('Photo upload error:', err)
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" })
+    } finally {
+      setUploading(false)
+      if (fileInputRef.current) fileInputRef.current.value = ''
+    }
   }
 
   const currentJob = selectedJob ? jobs.find((j) => j.id === selectedJob) : null
+  selectedJobRef.current = selectedJob
 
   if (currentJob) {
     const currentStatus = getJobStatus(currentJob.id)
-    const photoCount = uploadedPhotos[currentJob.id] ?? (currentJob.proofPhotos?.length || 0)
+    const proofPhotos: string[] = currentJob.proofPhotos || []
 
     return (
       <div className="min-h-screen bg-muted">
@@ -149,15 +181,16 @@ export default function StaffJobsPage() {
               <CardTitle className="text-base">{t("proofPhotos")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {photoCount > 0 ? (
+              {proofPhotos.length > 0 ? (
                 <div className="grid grid-cols-3 gap-2">
-                  {Array.from({ length: photoCount }).map((_, i) => (
-                    <div
-                      key={i}
-                      className="aspect-square rounded-lg bg-muted flex items-center justify-center"
-                    >
-                      <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                    </div>
+                  {proofPhotos.map((url, i) => (
+                    <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                      <img
+                        src={url}
+                        alt={`Proof photo ${i + 1}`}
+                        className="aspect-square w-full rounded-lg object-cover"
+                      />
+                    </a>
                   ))}
                 </div>
               ) : (
@@ -166,14 +199,24 @@ export default function StaffJobsPage() {
                 </p>
               )}
 
+              {/* Hidden native file / camera input */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                capture="environment"
+                className="hidden"
+                onChange={handleFileSelected}
+              />
               <Button
                 variant="outline"
                 className="w-full"
-                onClick={() => handleUploadPhoto(currentJob.id)}
+                disabled={uploading}
+                onClick={handleUploadPhoto}
               >
                 <Camera className="h-4 w-4 mr-2" />
-                  {t("uploadPhoto")}
-                </Button>
+                {uploading ? "Uploading..." : t("uploadPhoto")}
+              </Button>
             </CardContent>
           </Card>
 

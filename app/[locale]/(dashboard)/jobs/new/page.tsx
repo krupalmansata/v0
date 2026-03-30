@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import Link from "next/link"
 import { ArrowLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -20,28 +20,31 @@ import { PageHeader } from "@/components/page-header"
 import { useAuth } from "@/lib/auth-context"
 import { useToast } from "@/components/ui/use-toast"
 import { database } from "@/lib/firebase"
-import { ref, push, set, onValue } from "firebase/database"
+import { ref, push, set, update, onValue } from "firebase/database"
 
 export default function NewJobPage() {
   const { userData } = useAuth()
   const businessId = userData?.businessId
   const { toast } = useToast()
-  
+
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const bookingId = searchParams.get("bookingId")
+
   const [loading, setLoading] = useState(false)
   const [staff, setStaff] = useState<any[]>([])
 
   const [formData, setFormData] = useState({
-    customerName: "",
-    customerPhone: "",
-    address: "",
-    serviceType: "",
+    customerName: searchParams.get("customerName") || "",
+    customerPhone: searchParams.get("customerPhone") || "",
+    address: searchParams.get("address") || "",
+    serviceType: searchParams.get("serviceType") || "",
     description: "",
-    scheduledDate: "",
-    scheduledTime: "",
+    scheduledDate: searchParams.get("preferredDate") || "",
+    scheduledTime: searchParams.get("preferredTime") || "",
     assignedStaffId: "",
     estimatedAmount: "",
-    notes: "",
+    notes: searchParams.get("notes") || "",
   })
 
   // Basic service types (you may want to move these to DB later)
@@ -77,7 +80,15 @@ export default function NewJobPage() {
       }
       
       await set(newJobRef, jobData)
-      
+
+      // If converted from a booking, mark the booking as converted and link back
+      if (bookingId) {
+        await update(ref(database, `bookings/${businessId}/${bookingId}`), {
+          status: "converted",
+          jobId: newJobRef.key,
+        })
+      }
+
       toast({
         title: "Job Created",
         description: `Successfully created a new job.`,

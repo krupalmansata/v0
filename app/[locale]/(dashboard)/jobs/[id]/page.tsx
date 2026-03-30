@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/page-header"
 import { StatusBadge } from "@/components/status-badge"
 import { useAuth } from "@/lib/auth-context"
 import { database } from "@/lib/firebase"
-import { ref, onValue, update } from "firebase/database"
+import { ref, onValue, update, push, set } from "firebase/database"
 import { useToast } from "@/components/ui/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -48,6 +48,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [reassignId, setReassignId] = useState("")
+  const [generatingInvoice, setGeneratingInvoice] = useState(false)
 
   useEffect(() => {
     if (!businessId) return
@@ -272,13 +273,14 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 </div>
               ) : (
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {job.proofPhotos.map((photo: any, index: number) => (
-                    <div
-                      key={index}
-                      className="aspect-square rounded-lg bg-muted flex items-center justify-center"
-                    >
-                      <ImageIcon className="h-8 w-8 text-muted-foreground" />
-                    </div>
+                  {job.proofPhotos.map((url: string, index: number) => (
+                    <a key={index} href={url} target="_blank" rel="noopener noreferrer">
+                      <img
+                        src={url}
+                        alt={`Proof photo ${index + 1}`}
+                        className="aspect-square w-full rounded-lg object-cover"
+                      />
+                    </a>
                   ))}
                 </div>
               )}
@@ -321,8 +323,38 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 </Button>
               )}
               {job.status === "completed" && (
-                <Button className="w-full" asChild>
-                  <Link href="/invoice-preview">Generate Invoice</Link>
+                <Button
+                  className="w-full"
+                  disabled={generatingInvoice}
+                  onClick={async () => {
+                    if (!businessId) return
+                    setGeneratingInvoice(true)
+                    try {
+                      const invoicesRef = ref(database, `invoices/${businessId}`)
+                      const newRef = push(invoicesRef)
+                      const invoiceData = {
+                        invoiceNumber: `INV-${Date.now().toString(36).toUpperCase()}`,
+                        customerName: job.customerName || "",
+                        customerAddress: job.address || "",
+                        customerPhone: job.customerPhone || "",
+                        status: "draft",
+                        issueDate: new Date().toISOString().split("T")[0],
+                        jobId: job.id,
+                        serviceType: job.serviceType || "",
+                        totalAmount: job.estimatedAmount || 0,
+                        createdAt: new Date().toISOString(),
+                      }
+                      await set(newRef, invoiceData)
+                      toast({ title: "Invoice Created", description: "Invoice generated successfully." })
+                      router.push("/invoice-preview")
+                    } catch (error) {
+                      toast({ title: "Error", description: "Failed to generate invoice", variant: "destructive" })
+                    } finally {
+                      setGeneratingInvoice(false)
+                    }
+                  }}
+                >
+                  {generatingInvoice ? "Generating..." : "Generate Invoice"}
                 </Button>
               )}
 
