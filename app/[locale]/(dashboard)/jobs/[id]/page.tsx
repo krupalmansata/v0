@@ -51,6 +51,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const [loading, setLoading] = useState(true)
   const [updating, setUpdating] = useState(false)
   const [reassignId, setReassignId] = useState("")
+  const [reassignOpen, setReassignOpen] = useState(false)
   const [generatingInvoice, setGeneratingInvoice] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
   const [editLoading, setEditLoading] = useState(false)
@@ -100,6 +101,8 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
       })
     }
   }, [job])
+
+  const updateStatus = async (newStatus: string) => {
     if (!businessId || !job) return
     setUpdating(true)
     try {
@@ -146,12 +149,30 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     setUpdating(true)
     try {
       const selectedMember = staff.find(s => s.id === reassignId)
-      await update(ref(database, `jobs/${businessId}/${id}`), { 
+      const previousStaffId = job.assignedStaffId || null
+      const previousStaffName = job.assignedStaffName || null
+
+      // Write reassignment history entry
+      const historyRef = ref(database, `jobs/${businessId}/${id}/reassignmentHistory`)
+      await push(historyRef, {
+        fromStaffId: previousStaffId,
+        fromStaffName: previousStaffName,
+        toStaffId: reassignId,
+        toStaffName: selectedMember?.name || "",
+        previousStatus: job.status,
+        reassignedAt: new Date().toISOString(),
+      })
+
+      // Always move status to "assigned" on reassignment to prevent regression
+      await update(ref(database, `jobs/${businessId}/${id}`), {
         assignedStaffId: reassignId,
         assignedStaffName: selectedMember?.name || "",
-        status: job.status === "new" ? "assigned" : job.status
+        status: "assigned",
       })
+
       toast({ title: "Staff Reassigned", description: "Successfully assigned new staff member." })
+      setReassignOpen(false)
+      setReassignId("")
     } catch (error) {
       toast({ title: "Error", description: "Failed to reassign staff", variant: "destructive" })
     } finally {
@@ -352,18 +373,26 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             </CardHeader>
             <CardContent className="space-y-3">
               {job.status === "new" && (
-                <Button
-                  className="w-full"
-                  disabled={updating}
-                  onClick={() => updateStatus("assigned")}
-                >
-                  Mark as Assigned
-                </Button>
+                <>
+                  <Button
+                    className="w-full"
+                    disabled={updating || !job.assignedStaffId}
+                    title={!job.assignedStaffId ? "Assign a staff member before marking as assigned" : undefined}
+                    onClick={() => updateStatus("assigned")}
+                  >
+                    Mark as Assigned
+                  </Button>
+                  {!job.assignedStaffId && (
+                    <p className="text-xs text-muted-foreground text-center">
+                      Assign a staff member first
+                    </p>
+                  )}
+                </>
               )}
               {job.status === "assigned" && (
                 <Button
                   className="w-full"
-                  disabled={updating}
+                  disabled={updating || !job.assignedStaffId}
                   onClick={() => updateStatus("in-progress")}
                 >
                   Mark In Progress
@@ -414,16 +443,24 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 </Button>
               )}
 
-              <Dialog>
+              <Dialog
+                open={reassignOpen}
+                onOpenChange={(open) => {
+                  setReassignOpen(open)
+                  if (!open) setReassignId("")
+                }}
+              >
                 <DialogTrigger asChild>
-                  <Button variant="outline" className="w-full">
+                  <Button variant="outline" className="w-full" onClick={() => setReassignOpen(true)}>
                     Reassign Staff
                   </Button>
                 </DialogTrigger>
                 <DialogContent>
                   <DialogHeader>
                     <DialogTitle>Reassign Staff</DialogTitle>
-                    <DialogDescription>Select a new staff member to assign to this job.</DialogDescription>
+                    <DialogDescription>
+                      Select a new staff member. The job status will be reset to <strong>Assigned</strong>.
+                    </DialogDescription>
                   </DialogHeader>
                   <div className="space-y-4 pt-4">
                     <Select onValueChange={setReassignId} value={reassignId}>
@@ -431,11 +468,13 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                         <SelectValue placeholder="Select staff member" />
                       </SelectTrigger>
                       <SelectContent>
-                        {staff.map((member) => (
-                          <SelectItem key={member.id} value={member.id}>
-                            {member.name} - {member.role}
-                          </SelectItem>
-                        ))}
+                        {staff
+                          .filter((member) => member.id !== job.assignedStaffId)
+                          .map((member) => (
+                            <SelectItem key={member.id} value={member.id}>
+                              {member.name} - {member.role}
+                            </SelectItem>
+                          ))}
                       </SelectContent>
                     </Select>
                     <Button className="w-full" onClick={handleReassign} disabled={!reassignId || updating}>
