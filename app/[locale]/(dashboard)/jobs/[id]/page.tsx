@@ -3,8 +3,11 @@
 import { use, useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Image as ImageIcon } from "lucide-react"
+import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Image as ImageIcon, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Label } from "@/components/ui/label"
+import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/page-header"
 import { StatusBadge } from "@/components/status-badge"
@@ -49,6 +52,11 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const [updating, setUpdating] = useState(false)
   const [reassignId, setReassignId] = useState("")
   const [generatingInvoice, setGeneratingInvoice] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editLoading, setEditLoading] = useState(false)
+  const [editData, setEditData] = useState<any>({})
+
+  const serviceTypes = ["AC Servicing", "Plumbing", "Electrical", "Cleaning", "Pest Control", "Other"]
 
   useEffect(() => {
     if (!businessId) return
@@ -76,7 +84,22 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     }
   }, [businessId, id])
 
-  const updateStatus = async (newStatus: string) => {
+  // Sync edit form whenever job data changes
+  useEffect(() => {
+    if (job) {
+      setEditData({
+        customerName: job.customerName || "",
+        customerPhone: job.customerPhone || "",
+        address: job.address || "",
+        serviceType: job.serviceType || "",
+        description: job.description || "",
+        scheduledDate: job.scheduledDate || "",
+        scheduledTime: job.scheduledTime || "",
+        estimatedAmount: job.estimatedAmount != null ? String(job.estimatedAmount) : "",
+        notes: job.notes || "",
+      })
+    }
+  }, [job])
     if (!businessId || !job) return
     setUpdating(true)
     try {
@@ -86,6 +109,35 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
       toast({ title: "Error", description: "Failed to update status", variant: "destructive" })
     } finally {
       setUpdating(false)
+    }
+  }
+
+  const handleEditSave = async () => {
+    if (!businessId || !job) return
+    if (!editData.customerName?.trim()) {
+      toast({ title: "Validation Error", description: "Customer name is required.", variant: "destructive" })
+      return
+    }
+    setEditLoading(true)
+    try {
+      const updates: any = {
+        customerName: editData.customerName.trim(),
+        customerPhone: editData.customerPhone || "",
+        address: editData.address || "",
+        serviceType: editData.serviceType || "",
+        description: editData.description || "",
+        scheduledDate: editData.scheduledDate || "",
+        scheduledTime: editData.scheduledTime || "",
+        estimatedAmount: editData.estimatedAmount ? parseFloat(editData.estimatedAmount) : 0,
+        notes: editData.notes || "",
+      }
+      await update(ref(database, `jobs/${businessId}/${id}`), updates)
+      toast({ title: "Job Updated", description: "Job details saved successfully." })
+      setEditOpen(false)
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to save changes.", variant: "destructive" })
+    } finally {
+      setEditLoading(false)
     }
   }
 
@@ -151,6 +203,10 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
         </Button>
         <PageHeader title={`Job ${job.id}`} description={job.serviceType}>
           <StatusBadge status={job.status} />
+          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+            <Pencil className="h-4 w-4 mr-2" />
+            Edit Job
+          </Button>
         </PageHeader>
       </div>
 
@@ -406,6 +462,105 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           </Card>
         </div>
       </div>
+
+      {/* Edit Job Dialog */}
+      <Dialog open={editOpen} onOpenChange={setEditOpen}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Edit Job</DialogTitle>
+            <DialogDescription>Update the job details below.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-2">
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Customer Name</Label>
+                <Input
+                  value={editData.customerName || ""}
+                  onChange={(e) => setEditData((p: any) => ({ ...p, customerName: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Phone</Label>
+                <Input
+                  value={editData.customerPhone || ""}
+                  onChange={(e) => setEditData((p: any) => ({ ...p, customerPhone: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Address</Label>
+              <Input
+                value={editData.address || ""}
+                onChange={(e) => setEditData((p: any) => ({ ...p, address: e.target.value }))}
+              />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Service Type</Label>
+                <Select
+                  value={editData.serviceType || ""}
+                  onValueChange={(v) => setEditData((p: any) => ({ ...p, serviceType: v }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger>
+                  <SelectContent>
+                    {serviceTypes.map((t) => (
+                      <SelectItem key={t} value={t}>{t}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Estimated Amount ($)</Label>
+                <Input
+                  type="number"
+                  value={editData.estimatedAmount || ""}
+                  onChange={(e) => setEditData((p: any) => ({ ...p, estimatedAmount: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Scheduled Date</Label>
+                <Input
+                  type="date"
+                  value={editData.scheduledDate || ""}
+                  onChange={(e) => setEditData((p: any) => ({ ...p, scheduledDate: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Scheduled Time</Label>
+                <Input
+                  type="time"
+                  value={editData.scheduledTime || ""}
+                  onChange={(e) => setEditData((p: any) => ({ ...p, scheduledTime: e.target.value }))}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Description</Label>
+              <Textarea
+                rows={2}
+                value={editData.description || ""}
+                onChange={(e) => setEditData((p: any) => ({ ...p, description: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Textarea
+                rows={2}
+                value={editData.notes || ""}
+                onChange={(e) => setEditData((p: any) => ({ ...p, notes: e.target.value }))}
+              />
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button className="flex-1" onClick={handleEditSave} disabled={editLoading}>
+                {editLoading ? "Saving..." : "Save Changes"}
+              </Button>
+              <Button variant="outline" onClick={() => setEditOpen(false)}>Cancel</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

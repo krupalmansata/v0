@@ -68,13 +68,42 @@ export default function NewJobPage() {
 
   const handleSubmit = async (isDraft: boolean) => {
     if (!businessId) return
+
+    // Validation — drafts require at least a customer name
+    if (!formData.customerName.trim()) {
+      toast({ title: "Validation Error", description: "Customer name is required.", variant: "destructive" })
+      return
+    }
+    if (!isDraft) {
+      if (!formData.customerPhone.trim()) {
+        toast({ title: "Validation Error", description: "Customer phone is required.", variant: "destructive" })
+        return
+      }
+      if (!formData.address.trim()) {
+        toast({ title: "Validation Error", description: "Service address is required.", variant: "destructive" })
+        return
+      }
+      if (!formData.serviceType) {
+        toast({ title: "Validation Error", description: "Service type is required.", variant: "destructive" })
+        return
+      }
+      if (!formData.scheduledDate) {
+        toast({ title: "Validation Error", description: "Scheduled date is required.", variant: "destructive" })
+        return
+      }
+    }
+
     setLoading(true)
     try {
       const jobsRef = ref(database, `jobs/${businessId}`)
       const newJobRef = push(jobsRef)
-      
+
+      const selectedMember = staff.find((s) => s.id === formData.assignedStaffId)
+
       const jobData = {
         ...formData,
+        assignedStaffName: selectedMember?.name || "",
+        estimatedAmount: formData.estimatedAmount ? parseFloat(formData.estimatedAmount) : 0,
         status: isDraft ? "draft" : (formData.assignedStaffId ? "assigned" : "new"),
         createdAt: new Date().toISOString(),
       }

@@ -14,7 +14,7 @@ import { database } from "@/lib/firebase"
 import { ref, onValue } from "firebase/database"
 import { Skeleton } from "@/components/ui/skeleton"
 
-const statusFilters = ["all", "new", "assigned", "in-progress", "completed"] as const
+const statusFilters = ["all", "draft", "new", "assigned", "in-progress", "completed"] as const
 
 export default function JobsPage() {
   const tJobs = useTranslations("Jobs")

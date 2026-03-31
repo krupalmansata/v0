@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils"
 import { useTranslations } from "next-intl"
 
-type JobStatus = "new" | "assigned" | "in-progress" | "completed"
+type JobStatus = "draft" | "new" | "assigned" | "in-progress" | "completed"
 type BookingStatus = "new" | "contacted" | "converted" | "rejected"
 type InvoiceStatus = "draft" | "sent" | "paid"
 type StaffStatus = "active" | "inactive"
