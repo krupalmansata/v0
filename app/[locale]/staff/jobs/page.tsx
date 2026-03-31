@@ -23,6 +23,7 @@ import { ref, onValue, update } from "firebase/database"
 import { database } from "@/lib/firebase"
 import { supabase } from "@/lib/supabase"
 import { useToast } from "@/components/ui/use-toast"
+import { normalizePhotos } from "@/lib/utils"
 
 export default function StaffJobsPage() {
   const t = useTranslations("StaffJobs");
@@ -80,7 +81,7 @@ export default function StaffJobsPage() {
     if (!userData?.businessId) return
     const job = jobs.find(j => j.id === jobId)
     // Bug fix #6: require at least one proof photo
-    const photos: string[] = job?.proofPhotos || []
+    const photos: string[] = normalizePhotos(job?.proofPhotos)
     if (photos.length === 0) {
       toast({ title: "Proof required", description: "Please upload at least one proof photo before marking complete.", variant: "destructive" })
       return
@@ -121,7 +122,7 @@ export default function StaffJobsPage() {
         .from('invoice-images')
         .getPublicUrl(filePath)
 
-      const existingPhotos: string[] = job.proofPhotos || []
+      const existingPhotos: string[] = normalizePhotos(job.proofPhotos)
       const updatedPhotos = [...existingPhotos, urlData.publicUrl]
       await update(ref(database, `jobs/${userData.businessId}/${jobId}`), { proofPhotos: updatedPhotos })
       toast({ title: t("uploadPhoto"), description: "Photo uploaded successfully" })
@@ -144,7 +145,7 @@ export default function StaffJobsPage() {
 
   if (currentJob) {
     const currentStatus = getJobStatus(currentJob.id)
-    const proofPhotos: string[] = currentJob.proofPhotos || []
+    const proofPhotos: string[] = normalizePhotos(currentJob.proofPhotos)
 
     return (
       <div className="min-h-screen bg-muted">

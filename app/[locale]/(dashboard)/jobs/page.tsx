@@ -13,6 +13,7 @@ import { useAuth } from "@/lib/auth-context"
 import { database } from "@/lib/firebase"
 import { ref, onValue } from "firebase/database"
 import { Skeleton } from "@/components/ui/skeleton"
+import { formatDate, formatTime, formatJobId } from "@/lib/utils"
 
 const statusFilters = ["all", "draft", "new", "assigned", "in-progress", "completed"] as const
 
@@ -35,7 +36,14 @@ export default function JobsPage() {
     const unsubscribe = onValue(jobsRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val()
-        setJobs(Object.keys(data).map(key => ({ id: key, ...data[key] })))
+        const list = Object.keys(data).map(key => ({ id: key, ...data[key] }))
+        // Sort by scheduledDate desc, fall back to createdAt desc
+        list.sort((a, b) => {
+          const da = a.scheduledDate || a.createdAt || ""
+          const db = b.scheduledDate || b.createdAt || ""
+          return db.localeCompare(da)
+        })
+        setJobs(list)
       } else {
         setJobs([])
       }
@@ -119,7 +127,7 @@ export default function JobsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-3">
                         <span className="text-sm font-mono text-muted-foreground">
-                          {job.id}
+                          {formatJobId(job.id)}
                         </span>
                         <StatusBadge status={job.status} />
                       </div>
@@ -130,7 +138,7 @@ export default function JobsPage() {
                     </div>
                     <div className="flex flex-col sm:items-end gap-1">
                       <p className="text-sm">
-                        {job.scheduledDate} at {job.scheduledTime}
+                        {job.scheduledDate ? `${formatDate(job.scheduledDate)} at ${formatTime(job.scheduledTime)}` : "Not scheduled"}
                       </p>
                       <p className="text-sm text-muted-foreground">
                         {job.assignedStaffName || "Unassigned"}

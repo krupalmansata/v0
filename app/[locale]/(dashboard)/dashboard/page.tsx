@@ -13,6 +13,7 @@ import { useAuth } from "@/lib/auth-context"
 import { database } from "@/lib/firebase"
 import { ref, onValue } from "firebase/database"
 import { Skeleton } from "@/components/ui/skeleton"
+import { formatDate, formatTime } from "@/lib/utils"
 
 export default function DashboardPage() {
   const tDashboard = useTranslations("Dashboard")
@@ -80,11 +81,27 @@ export default function DashboardPage() {
   }, [businessId])
 
   const todayStr = new Date().toISOString().split("T")[0]
+
+  // Start of this week (Monday)
+  const thisWeekStart = (() => {
+    const d = new Date()
+    const day = d.getDay() // 0=Sun
+    const diff = d.getDate() - (day === 0 ? 6 : day - 1)
+    const monday = new Date(d)
+    monday.setDate(diff)
+    return monday.toISOString().split("T")[0]
+  })()
+
   const todaysJobs = jobs.filter((job) => job.scheduledDate === todayStr)
   const pendingBookings = bookingRequests.filter((req) => req.status === "new")
   const activeStaff = staff.filter((s) => s.status === "active")
-  const recentInvoices = invoices.slice(0, 3)
-  const recentBookings = bookingRequests.slice(0, 4)
+  const invoicesThisWeek = invoices.filter((i) => (i.issueDate || i.createdAt || "").slice(0, 10) >= thisWeekStart)
+  const recentInvoices = [...invoices]
+    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
+    .slice(0, 3)
+  const recentBookings = [...bookingRequests]
+    .sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
+    .slice(0, 4)
 
   if (loading) {
     return (
@@ -153,9 +170,9 @@ export default function DashboardPage() {
         />
         <StatCard
           title="Invoices This Week"
-          value={invoices.length}
+          value={invoicesThisWeek.length}
           icon={FileText}
-          description={`${invoices.filter((i) => i.status === "paid").length} paid`}
+          description={`${invoicesThisWeek.filter((i) => i.status === "paid").length} paid`}
         />
       </div>
 

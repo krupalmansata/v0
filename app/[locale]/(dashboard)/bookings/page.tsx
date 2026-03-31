@@ -53,7 +53,9 @@ export default function BookingsPage() {
     const unsubscribe = onValue(bookingsRef, (snapshot) => {
       if (snapshot.exists()) {
         const data = snapshot.val()
-        setRequests(Object.keys(data).map(key => ({ id: key, ...data[key] })))
+        const list = Object.keys(data).map(key => ({ id: key, ...data[key] }))
+        list.sort((a, b) => (b.createdAt || "").localeCompare(a.createdAt || ""))
+        setRequests(list)
       } else {
         setRequests([])
       }

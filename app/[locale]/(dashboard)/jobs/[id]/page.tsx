@@ -16,6 +16,7 @@ import { database } from "@/lib/firebase"
 import { ref, onValue, update, push, set, get } from "firebase/database"
 import { useToast } from "@/components/ui/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
+import { formatDate, formatTime, formatJobId, normalizePhotos } from "@/lib/utils"
 import {
   Select,
   SelectContent,
@@ -222,7 +223,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <PageHeader title={`Job ${job.id}`} description={job.serviceType}>
+        <PageHeader title={`Job ${formatJobId(job.id)}`} description={job.serviceType}>
           <StatusBadge status={job.status} />
           <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
             <Pencil className="h-4 w-4 mr-2" />
@@ -307,7 +308,7 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 <Calendar className="h-5 w-5 text-muted-foreground mt-0.5" />
                 <div>
                   <p className="font-medium">
-                    {job.scheduledDate} at {job.scheduledTime}
+                    {job.scheduledDate ? `${formatDate(job.scheduledDate)} at ${formatTime(job.scheduledTime)}` : "Not scheduled"}
                   </p>
                   <p className="text-sm text-muted-foreground">Scheduled</p>
                 </div>
@@ -341,26 +342,29 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               <CardTitle>Proof of Completion</CardTitle>
             </CardHeader>
             <CardContent>
-              {!job.proofPhotos || job.proofPhotos.length === 0 ? (
-                <div className="text-center py-8 border-2 border-dashed rounded-lg">
-                  <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground" />
-                  <p className="text-sm text-muted-foreground mt-2">
-                    No proof photos uploaded yet
-                  </p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                  {job.proofPhotos.map((url: string, index: number) => (
-                    <a key={index} href={url} target="_blank" rel="noopener noreferrer">
-                      <img
-                        src={url}
-                        alt={`Proof photo ${index + 1}`}
-                        className="aspect-square w-full rounded-lg object-cover"
-                      />
-                    </a>
-                  ))}
-                </div>
-              )}
+              {(() => {
+                const photos = normalizePhotos(job.proofPhotos)
+                return photos.length === 0 ? (
+                  <div className="text-center py-8 border-2 border-dashed rounded-lg">
+                    <ImageIcon className="h-10 w-10 mx-auto text-muted-foreground" />
+                    <p className="text-sm text-muted-foreground mt-2">
+                      No proof photos uploaded yet
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                    {photos.map((url: string, index: number) => (
+                      <a key={index} href={url} target="_blank" rel="noopener noreferrer">
+                        <img
+                          src={url}
+                          alt={`Proof photo ${index + 1}`}
+                          className="aspect-square w-full rounded-lg object-cover"
+                        />
+                      </a>
+                    ))}
+                  </div>
+                )
+              })()}
             </CardContent>
           </Card>
         </div>
@@ -510,7 +514,11 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
               <CardTitle>Estimate</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-2xl font-bold">${job.estimatedAmount}</p>
+              <p className="text-2xl font-bold">
+                {job.estimatedAmount != null && job.estimatedAmount !== ""
+                  ? `$${job.estimatedAmount}`
+                  : "Not specified"}
+              </p>
               <p className="text-sm text-muted-foreground">Estimated amount</p>
             </CardContent>
           </Card>
