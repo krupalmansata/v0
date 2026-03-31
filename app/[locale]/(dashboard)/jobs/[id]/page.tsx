@@ -13,6 +13,7 @@ import { StatusBadge } from "@/components/status-badge"
 import { useAuth } from "@/lib/auth-context"
 import { database } from "@/lib/firebase"
 import { supabase } from "@/lib/supabase"
+import { sendJobNotification, getJobNotificationRecipients, getStaffUserId } from "@/lib/notifications"
 import { ref, onValue, update, push, set, get, remove } from "firebase/database"
 import { useToast } from "@/components/ui/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -53,7 +54,7 @@ const statusSteps = [
 export default function JobDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const router = useRouter()
-  const { userData } = useAuth()
+  const { user, userData } = useAuth()
   const businessId = userData?.businessId
   const { toast } = useToast()
 
@@ -135,6 +136,19 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
       const updatedPhotos = [...existingPhotos, urlData.publicUrl]
       await update(ref(database, `jobs/${businessId}/${id}`), { proofPhotos: updatedPhotos })
       toast({ title: "Uploaded", description: "Document uploaded successfully." })
+
+      // Notify assignees + admin about photo upload
+      const recipients = await getJobNotificationRecipients(businessId, job.assignedStaffId)
+      sendJobNotification({
+        businessId,
+        senderUid: user?.uid || "",
+        type: "photo_upload",
+        jobId: id,
+        jobTitle: job.serviceType || job.customerName,
+        customerName: job.customerName || "",
+        actorName: user?.displayName || userData?.name || "Admin",
+        recipientUids: recipients,
+      }).catch(() => {}) // fire-and-forget
     } catch (err: any) {
       console.error('Doc upload error:', err)
       toast({ title: "Upload failed", description: err.message, variant: "destructive" })
@@ -193,6 +207,20 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
     try {
       await update(ref(database, `jobs/${businessId}/${id}`), { status: newStatus })
       toast({ title: "Status Updated", description: `Job marked as ${newStatus}.` })
+
+      // Notify all assignees + admin
+      const recipients = await getJobNotificationRecipients(businessId, job.assignedStaffId)
+      await sendJobNotification({
+        businessId,
+        senderUid: user?.uid || "",
+        type: "status_change",
+        jobId: id,
+        jobTitle: job.serviceType || job.customerName,
+        customerName: job.customerName || "",
+        actorName: user?.displayName || userData?.name || "Admin",
+        newStatus,
+        recipientUids: recipients,
+      })
     } catch (error) {
       toast({ title: "Error", description: "Failed to update status", variant: "destructive" })
     } finally {
@@ -256,6 +284,23 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
       })
 
       toast({ title: "Staff Reassigned", description: "Successfully assigned new staff member." })
+
+      // Notify the newly assigned staff member
+      const newStaffUid = await getStaffUserId(businessId, reassignId)
+      if (newStaffUid) {
+        await sendJobNotification({
+          businessId,
+          senderUid: user?.uid || "",
+          type: "assignment",
+          jobId: id,
+          jobTitle: job.serviceType || job.customerName,
+          customerName: job.customerName || "",
+          actorName: user?.displayName || userData?.name || "Admin",
+          staffName: selectedMember?.name || "",
+          recipientUids: [newStaffUid],
+        })
+      }
+
       setReassignOpen(false)
       setReassignId("")
     } catch (error) {
@@ -272,6 +317,20 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
       await update(ref(database, `jobs/${businessId}/${id}`), { status: "cancelled" })
       toast({ title: "Job Cancelled", description: "The job has been cancelled." })
       setCancelOpen(false)
+
+      // Notify assignees + admin about cancellation
+      const recipients = await getJobNotificationRecipients(businessId, job.assignedStaffId)
+      await sendJobNotification({
+        businessId,
+        senderUid: user?.uid || "",
+        type: "status_change",
+        jobId: id,
+        jobTitle: job.serviceType || job.customerName,
+        customerName: job.customerName || "",
+        actorName: user?.displayName || userData?.name || "Admin",
+        newStatus: "cancelled",
+        recipientUids: recipients,
+      })
     } catch (error) {
       toast({ title: "Error", description: "Failed to cancel job", variant: "destructive" })
     } finally {

@@ -10,10 +10,11 @@ import { PageHeader } from "@/components/page-header"
 import { StatusBadge } from "@/components/status-badge"
 import { useAuth } from "@/lib/auth-context"
 import { database } from "@/lib/firebase"
-import { ref, onValue, push, set, update } from "firebase/database"
+import { ref, onValue, push, set, update, remove } from "firebase/database"
 import { useToast } from "@/components/ui/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useTranslations } from "next-intl"
+import { encodeEmailKey } from "@/lib/utils"
 import {
   Dialog,
   DialogContent,
@@ -102,6 +103,14 @@ export default function StaffPage() {
         status: formData.status,
         createdAt: new Date().toISOString()
       })
+      // Index email so staff can sign in with Google and be recognised
+      if (formData.email) {
+        const emailKey = encodeEmailKey(formData.email)
+        await set(ref(database, `staffEmailIndex/${emailKey}`), {
+          businessId,
+          staffId: newStaffRef.key,
+        })
+      }
       toast({ title: "Staff Member Added", description: "Successfully added new team member." })
       setShowAddForm(false)
       setFormData({ name: "", email: "", phone: "", role: "", status: "active" })
@@ -123,6 +132,18 @@ export default function StaffPage() {
         role: editFormData.role,
         status: editFormData.status,
       })
+      // Update email index: remove old, set new
+      if (editStaff.email && editStaff.email !== editFormData.email) {
+        const oldKey = encodeEmailKey(editStaff.email)
+        await remove(ref(database, `staffEmailIndex/${oldKey}`))
+      }
+      if (editFormData.email) {
+        const newKey = encodeEmailKey(editFormData.email)
+        await set(ref(database, `staffEmailIndex/${newKey}`), {
+          businessId,
+          staffId: editStaff.id,
+        })
+      }
       toast({ title: "Staff Updated", description: "Staff member details updated successfully." })
       setEditStaff(null)
     } catch (error) {

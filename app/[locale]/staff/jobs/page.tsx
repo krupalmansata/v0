@@ -24,11 +24,12 @@ import { database } from "@/lib/firebase"
 import { supabase } from "@/lib/supabase"
 import { useToast } from "@/components/ui/use-toast"
 import { normalizePhotos } from "@/lib/utils"
+import { sendJobNotification, getJobNotificationRecipients } from "@/lib/notifications"
 
 export default function StaffJobsPage() {
   const t = useTranslations("StaffJobs");
   const tStatus = useTranslations("Status");
-  const { userData } = useAuth()
+  const { user, userData } = useAuth()
   const { toast } = useToast()
   const [jobs, setJobs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -71,6 +72,21 @@ export default function StaffJobsPage() {
     if (!userData?.businessId) return
     try {
       await update(ref(database, `jobs/${userData.businessId}/${jobId}`), { status: "in-progress" })
+
+      // Notify admin about status change
+      const job = jobs.find(j => j.id === jobId)
+      const recipients = await getJobNotificationRecipients(userData.businessId, job?.assignedStaffId)
+      sendJobNotification({
+        businessId: userData.businessId,
+        senderUid: user?.uid || "",
+        type: "status_change",
+        jobId,
+        jobTitle: job?.serviceType || job?.customerName || "",
+        customerName: job?.customerName || "",
+        actorName: user?.displayName || userData?.name || "Staff",
+        newStatus: "in-progress",
+        recipientUids: recipients,
+      }).catch(() => {})
     } catch (error) {
       console.error("Failed to start job:", error)
       toast({ title: tStatus("Error"), description: tStatus("Error"), variant: "destructive" })
@@ -91,6 +107,22 @@ export default function StaffJobsPage() {
         status: "completed",
         completionNotes: completionNotes.trim(),
       })
+
+      // Notify admin about completion
+      const job = jobs.find(j => j.id === jobId)
+      const recipients = await getJobNotificationRecipients(userData.businessId, job?.assignedStaffId)
+      sendJobNotification({
+        businessId: userData.businessId,
+        senderUid: user?.uid || "",
+        type: "status_change",
+        jobId,
+        jobTitle: job?.serviceType || job?.customerName || "",
+        customerName: job?.customerName || "",
+        actorName: user?.displayName || userData?.name || "Staff",
+        newStatus: "completed",
+        recipientUids: recipients,
+      }).catch(() => {})
+
       setSelectedJob(null)
       setCompletionNotes("")
     } catch (error) {
@@ -165,6 +197,19 @@ export default function StaffJobsPage() {
       const updatedPhotos = [...existingPhotos, urlData.publicUrl]
       await update(ref(database, `jobs/${userData.businessId}/${jobId}`), { proofPhotos: updatedPhotos })
       toast({ title: t("uploadPhoto"), description: "Photo uploaded successfully" })
+
+      // Notify admin + assignees about new photo
+      const recipients = await getJobNotificationRecipients(userData.businessId, job.assignedStaffId)
+      sendJobNotification({
+        businessId: userData.businessId,
+        senderUid: user?.uid || "",
+        type: "photo_upload",
+        jobId,
+        jobTitle: job.serviceType || job.customerName || "",
+        customerName: job.customerName || "",
+        actorName: user?.displayName || userData?.name || "Staff",
+        recipientUids: recipients,
+      }).catch(() => {}) // fire-and-forget
     } catch (err: any) {
       console.error('Photo upload error:', err)
       toast({ title: "Upload failed", description: err.message, variant: "destructive" })

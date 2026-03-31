@@ -24,6 +24,13 @@
       }
     },
 
+    "staffEmailIndex": {
+      ".read": "auth !== null",
+      "$emailKey": {
+        ".write": "auth !== null && ((!data.exists() && newData.exists()) || (data.exists() && root.child('users').child(auth.uid).child('businessId').val() === data.child('businessId').val()))"
+      }
+    },
+
     "jobs": {
       "$businessId": {
         ".read": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId",
@@ -60,6 +67,15 @@
         ".write": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId",
         "$invoiceId": {
           ".validate": "newData.hasChildren(['totalAmount', 'status', 'jobId']) && (newData.child('status').val() === 'draft' || newData.child('status').val() === 'sent' || newData.child('status').val() === 'paid')"
+        }
+      }
+    },
+
+    "notifications": {
+      "$businessId": {
+        "$userId": {
+          ".read": "auth !== null && auth.uid === $userId && root.child('users').child(auth.uid).child('businessId').val() === $businessId",
+          ".write": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId"
         }
       }
     }

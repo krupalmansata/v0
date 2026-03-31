@@ -248,5 +248,17 @@
     "requestService": "Request a Service",
     "invoicePreview": "Invoice Preview",
     "invoicePreviewDesc": "Preview of your invoice design"
+  },
+  "Notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet",
+    "markAllRead": "Mark all read",
+    "defaultTitle": "New Notification",
+    "assignmentTitle": "New Assignment: {jobTitle}",
+    "assignmentBody": "{actor} assigned you — {customer}",
+    "statusChangeTitle": "Job Updated: {jobTitle}",
+    "statusChangeBody": "Status changed to {status} by {actor}",
+    "photoUploadTitle": "New Photo: {jobTitle}",
+    "photoUploadBody": "{actor} uploaded a proof photo"
   }
 }

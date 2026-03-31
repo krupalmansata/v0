@@ -5,6 +5,7 @@ import { User, onAuthStateChanged } from "firebase/auth"
 import { auth, database } from "./firebase"
 import { ref, get, set, update } from "firebase/database"
 import { useTranslations } from "next-intl"
+import { encodeEmailKey } from "./utils"
 
 interface AuthContextType {
   user: User | null
@@ -36,32 +37,75 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           const snapshot = await get(userRef)
           
           if (!snapshot.exists()) {
-            // Generate a unique businessId for each new user/business
-            const newBusinessId = `biz-${currentUser.uid.substring(0, 8)}-${Date.now()}`
-            const newUserData = {
-              name: currentUser.displayName,
-              email: currentUser.email,
-              avatar: currentUser.photoURL,
-              role: "Owner",
-              status: "active",
-              businessId: newBusinessId,
-              createdAt: new Date().toISOString()
+            // Check if this email is already registered as a staff member in some business
+            const emailKey = currentUser.email ? encodeEmailKey(currentUser.email) : null
+            let staffMatch: { businessId: string; staffId: string } | null = null
+
+            if (emailKey) {
+              const indexSnap = await get(ref(database, `staffEmailIndex/${emailKey}`))
+              if (indexSnap.exists()) {
+                staffMatch = indexSnap.val()
+              }
             }
-            await set(userRef, newUserData)
-            // Also create the business record
-            const businessRef = ref(database, `businesses/${newBusinessId}`)
-            await set(businessRef, {
-              name: currentUser.displayName ? t("defaultBusinessName", { name: currentUser.displayName }) : t("defaultBusinessFallback"),
-              email: currentUser.email || "",
-              phone: "",
-              primaryColor: "#0f172a",
-              slug: newBusinessId,
-              invoiceFooter: t("defaultInvoiceFooter"),
-              createdAt: new Date().toISOString()
-            })
-            setUserData(newUserData)
+
+            if (staffMatch) {
+              // --- Staff member signing in for the first time ---
+              const newUserData = {
+                name: currentUser.displayName,
+                email: currentUser.email,
+                avatar: currentUser.photoURL,
+                role: "Staff",
+                status: "active",
+                businessId: staffMatch.businessId,
+                staffRecordId: staffMatch.staffId,
+                createdAt: new Date().toISOString(),
+              }
+              await set(userRef, newUserData)
+              // Store reverse link on the staff record so notifications work
+              await update(
+                ref(database, `staff/${staffMatch.businessId}/${staffMatch.staffId}`),
+                { userId: currentUser.uid }
+              )
+              setUserData(newUserData)
+            } else {
+              // --- Brand-new business owner ---
+              const newBusinessId = `biz-${currentUser.uid.substring(0, 8)}-${Date.now()}`
+              const newUserData = {
+                name: currentUser.displayName,
+                email: currentUser.email,
+                avatar: currentUser.photoURL,
+                role: "Owner",
+                status: "active",
+                businessId: newBusinessId,
+                createdAt: new Date().toISOString(),
+              }
+              await set(userRef, newUserData)
+              // Also create the business record
+              const businessRef = ref(database, `businesses/${newBusinessId}`)
+              await set(businessRef, {
+                name: currentUser.displayName
+                  ? t("defaultBusinessName", { name: currentUser.displayName })
+                  : t("defaultBusinessFallback"),
+                email: currentUser.email || "",
+                phone: "",
+                primaryColor: "#0f172a",
+                slug: newBusinessId,
+                ownerUid: currentUser.uid,
+                invoiceFooter: t("defaultInvoiceFooter"),
+                createdAt: new Date().toISOString(),
+              })
+              setUserData(newUserData)
+            }
           } else {
             const existing = snapshot.val()
+            // Ensure ownerUid is set on the business (backfill for older accounts)
+            if (existing.businessId && existing.role === "Owner") {
+              const bizRef = ref(database, `businesses/${existing.businessId}/ownerUid`)
+              const ownerSnap = await get(bizRef)
+              if (!ownerSnap.exists()) {
+                await set(bizRef, currentUser.uid)
+              }
+            }
             // If staffRecordId is not yet resolved, try to find it by email
             if (!existing.staffRecordId && existing.businessId && currentUser.email) {
               const staffSnap = await get(ref(database, `staff/${existing.businessId}`))
@@ -72,6 +116,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                 )
                 if (matchKey) {
                   await update(userRef, { staffRecordId: matchKey })
+                  // Also store reverse link so notifications can find this user
+                  await update(ref(database, `staff/${existing.businessId}/${matchKey}`), { userId: currentUser.uid })
                   setUserData({ ...existing, staffRecordId: matchKey })
                 } else {
                   setUserData(existing)

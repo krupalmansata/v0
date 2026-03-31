@@ -248,5 +248,17 @@
     "requestService": "طلب خدمة",
     "invoicePreview": "معاينة الفاتورة",
     "invoicePreviewDesc": "معاينة تصميم فاتورتك"
+  },
+  "Notifications": {
+    "title": "الإشعارات",
+    "empty": "لا توجد إشعارات بعد",
+    "markAllRead": "قراءة الكل",
+    "defaultTitle": "إشعار جديد",
+    "assignmentTitle": "تعيين جديد: {jobTitle}",
+    "assignmentBody": "{actor} عيّنك — {customer}",
+    "statusChangeTitle": "تحديث وظيفة: {jobTitle}",
+    "statusChangeBody": "تم تغيير الحالة إلى {status} بواسطة {actor}",
+    "photoUploadTitle": "صورة جديدة: {jobTitle}",
+    "photoUploadBody": "{actor} رفع صورة إثبات"
   }
 }

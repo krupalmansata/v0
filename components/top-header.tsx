@@ -1,8 +1,9 @@
 "use client"
 
-import { Bell, User } from "lucide-react"
+import { User } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { MobileNav } from "@/components/mobile-nav"
+import { NotificationBell } from "@/components/notification-bell"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -43,11 +44,7 @@ export function TopHeader() {
         </div>
 
         <div className="flex items-center gap-2">
-          <Button variant="ghost" size="icon" className="relative">
-            <Bell className="h-5 w-5" />
-            <span className="absolute top-1 right-1 rtl:right-auto rtl:left-1 w-2 h-2 bg-destructive rounded-full" />
-            <span className="sr-only">{tNav("notifications")}</span>
-          </Button>
+          <NotificationBell />
 
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

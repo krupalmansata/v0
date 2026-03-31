@@ -21,9 +21,10 @@ import { useAuth } from "@/lib/auth-context"
 import { useToast } from "@/components/ui/use-toast"
 import { database } from "@/lib/firebase"
 import { ref, push, set, update, onValue } from "firebase/database"
+import { sendJobNotification, getStaffUserId } from "@/lib/notifications"
 
 export default function NewJobPage() {
-  const { userData } = useAuth()
+  const { user, userData } = useAuth()
   const businessId = userData?.businessId
   const { toast } = useToast()
 
@@ -116,6 +117,24 @@ export default function NewJobPage() {
           status: "converted",
           jobId: newJobRef.key,
         })
+      }
+
+      // Notify assigned staff member
+      if (formData.assignedStaffId && !isDraft) {
+        const staffUid = await getStaffUserId(businessId, formData.assignedStaffId)
+        if (staffUid) {
+          sendJobNotification({
+            businessId,
+            senderUid: user?.uid || "",
+            type: "assignment",
+            jobId: newJobRef.key || "",
+            jobTitle: formData.serviceType || formData.customerName,
+            customerName: formData.customerName || "",
+            actorName: user?.displayName || userData?.name || "Admin",
+            staffName: selectedMember?.name || "",
+            recipientUids: [staffUid],
+          }).catch(() => {}) // fire-and-forget
+        }
       }
 
       toast({

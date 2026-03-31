@@ -35,3 +35,8 @@ export function normalizePhotos(photos: any): string[] {
   if (Array.isArray(photos)) return photos.filter(Boolean)
   return Object.values(photos).filter(Boolean) as string[]
 }
+
+/** Encode an email address into a Firebase-safe key (no `.`, `#`, `$`, `[`, `]`) */
+export function encodeEmailKey(email: string): string {
+  return email.toLowerCase().replace(/\./g, ",")
+}
