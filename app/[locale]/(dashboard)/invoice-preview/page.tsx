@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, useCallback } from "react"
 import Link from "next/link"
-import { Download, Palette, Share2 } from "lucide-react"
+import { useSearchParams } from "next/navigation"
+import { Download, Palette, Share2, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { PageHeader } from "@/components/page-header"
@@ -21,6 +22,8 @@ export default function InvoicePreviewPage() {
   const businessId = userData?.businessId
   const { toast } = useToast()
   const invoiceRef = useRef<HTMLDivElement>(null)
+  const searchParams = useSearchParams()
+  const targetInvoiceId = searchParams.get("invoiceId")
 
   const [invoices, setInvoices] = useState<any[]>([])
   const [business, setBusiness] = useState<any>(null)
@@ -28,6 +31,7 @@ export default function InvoicePreviewPage() {
   const [loading, setLoading] = useState(true)
   const [downloading, setDownloading] = useState(false)
   const [sharing, setSharing] = useState(false)
+  const [updatingStatus, setUpdatingStatus] = useState(false)
   const selectedRef = useRef<any>(null)
 
   useEffect(() => {
@@ -43,11 +47,19 @@ export default function InvoicePreviewPage() {
       invoicesLoaded = true
       if (snapshot.exists()) {
         const data = snapshot.val()
-        const items = Object.keys(data).map(key => ({ id: key, ...data[key] }))
+        const items = Object.keys(data)
+          .map(key => ({ id: key, ...data[key] }))
+          .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime())
         setInvoices(items)
-        if (items.length > 0 && !selectedRef.current) {
-          selectedRef.current = items[0]
-          setSelectedInvoice(items[0])
+        // Bug fix #5: auto-select the invoice from the URL param, else default to first
+        if (!selectedRef.current) {
+          const target = targetInvoiceId
+            ? items.find(i => i.id === targetInvoiceId) || items[0]
+            : items[0]
+          if (target) {
+            selectedRef.current = target
+            setSelectedInvoice(target)
+          }
         }
       } else {
         setInvoices([])
@@ -169,6 +181,21 @@ export default function InvoicePreviewPage() {
     }
   }, [selectedInvoice, businessId, captureInvoice, toast, t])
 
+  // Bug fix #4: update invoice status (draft → sent → paid)
+  const handleStatusChange = async (newStatus: string) => {
+    if (!businessId || !selectedInvoice) return
+    setUpdatingStatus(true)
+    try {
+      await update(ref(database, `invoices/${businessId}/${selectedInvoice.id}`), { status: newStatus })
+      setSelectedInvoice((prev: any) => prev ? { ...prev, status: newStatus } : prev)
+      toast({ title: "Status Updated", description: `Invoice marked as ${newStatus}.` })
+    } catch {
+      toast({ title: "Error", description: "Failed to update status.", variant: "destructive" })
+    } finally {
+      setUpdatingStatus(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -232,6 +259,25 @@ export default function InvoicePreviewPage() {
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <CardTitle>{t("invoicePreview")}</CardTitle>
                   <div className="flex flex-wrap gap-2">
+                    {/* Bug fix #3: link back to source job */}
+                    {selectedInvoice.jobId && (
+                      <Button variant="outline" size="sm" asChild>
+                        <Link href={`/jobs/${selectedInvoice.jobId}`}>
+                          <ExternalLink className="h-4 w-4 me-2" />View Job
+                        </Link>
+                      </Button>
+                    )}
+                    {/* Bug fix #4: status progression buttons */}
+                    {selectedInvoice.status === "draft" && (
+                      <Button size="sm" variant="outline" disabled={updatingStatus} onClick={() => handleStatusChange("sent")}>
+                        Mark as Sent
+                      </Button>
+                    )}
+                    {selectedInvoice.status === "sent" && (
+                      <Button size="sm" variant="outline" disabled={updatingStatus} onClick={() => handleStatusChange("paid")}>
+                        Mark as Paid
+                      </Button>
+                    )}
                     <Button variant="outline" size="sm" asChild>
                       <Link href="/settings/branding">
                         <Palette className="h-4 w-4 me-2" />{t("editBranding")}

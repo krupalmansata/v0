@@ -13,7 +13,7 @@ import { PageHeader } from "@/components/page-header"
 import { StatusBadge } from "@/components/status-badge"
 import { useAuth } from "@/lib/auth-context"
 import { database } from "@/lib/firebase"
-import { ref, onValue, update, push, set } from "firebase/database"
+import { ref, onValue, update, push, set, get } from "firebase/database"
 import { useToast } from "@/components/ui/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
 import {
@@ -415,6 +415,17 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                     if (!businessId) return
                     setGeneratingInvoice(true)
                     try {
+                      // Bug fix #1: prevent duplicates — check if invoice for this job already exists
+                      const invoicesSnap = await get(ref(database, `invoices/${businessId}`))
+                      if (invoicesSnap.exists()) {
+                        const existing = Object.values(invoicesSnap.val() as Record<string, any>)
+                        const duplicate = existing.find((inv: any) => inv.jobId === job.id)
+                        if (duplicate) {
+                          toast({ title: "Invoice Exists", description: "An invoice for this job has already been generated.", variant: "destructive" })
+                          return
+                        }
+                      }
+
                       const invoicesRef = ref(database, `invoices/${businessId}`)
                       const newRef = push(invoicesRef)
                       const invoiceData = {
@@ -426,12 +437,16 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                         issueDate: new Date().toISOString().split("T")[0],
                         jobId: job.id,
                         serviceType: job.serviceType || "",
-                        totalAmount: job.estimatedAmount || 0,
+                        // Bug fix #2: always save as a number
+                        totalAmount: typeof job.estimatedAmount === "string"
+                          ? parseFloat(job.estimatedAmount) || 0
+                          : (job.estimatedAmount ?? 0),
                         createdAt: new Date().toISOString(),
                       }
                       await set(newRef, invoiceData)
                       toast({ title: "Invoice Created", description: "Invoice generated successfully." })
-                      router.push("/invoice-preview")
+                      // Bug fix #5: navigate directly to the new invoice
+                      router.push(`/invoice-preview?invoiceId=${newRef.key}`)
                     } catch (error) {
                       toast({ title: "Error", description: "Failed to generate invoice", variant: "destructive" })
                     } finally {
