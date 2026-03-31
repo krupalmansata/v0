@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { ref, set } from "firebase/database"
+import { database } from "@/lib/firebase"
 import { Upload, Eye, FileText } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -78,7 +80,10 @@ export default function BrandingPage() {
     if (!businessId) return
     setSaving(true)
     try {
-      await dbUpdate(`businesses/${businessId}`, formData)
+      const slugValue = slug.trim() || businessId
+      await dbUpdate(`businesses/${businessId}`, { ...formData, slug: slugValue })
+      // Write slugIndex for O(1) public page lookup
+      await set(ref(database, `slugIndex/${slugValue}`), businessId)
       toast({
         title: t("settingsSaved"),
         description: t("settingsSavedDesc"),

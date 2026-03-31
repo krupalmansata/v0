@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils"
 import { useTranslations } from "next-intl"
 
-type JobStatus = "draft" | "new" | "assigned" | "in-progress" | "completed"
+type JobStatus = "draft" | "new" | "assigned" | "in-progress" | "completed" | "cancelled"
 type BookingStatus = "new" | "contacted" | "converted" | "rejected"
 type InvoiceStatus = "draft" | "sent" | "paid"
 type StaffStatus = "active" | "inactive"
@@ -13,6 +13,7 @@ const statusStyles: Record<Status, string> = {
   assigned: "bg-amber-100 text-amber-700",
   "in-progress": "bg-purple-100 text-purple-700",
   completed: "bg-green-100 text-green-700",
+  cancelled: "bg-red-100 text-red-700",
   contacted: "bg-amber-100 text-amber-700",
   converted: "bg-green-100 text-green-700",
   rejected: "bg-red-100 text-red-700",
@@ -36,6 +37,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
     assigned: tStatus("assigned"),
     "in-progress": tStatus("inProgress"),
     completed: tStatus("completed"),
+    cancelled: tStatus("cancelled"),
     contacted: tStatus("contacted"),
     converted: tStatus("converted"),
     rejected: tStatus("rejected"),

@@ -17,6 +17,7 @@
     "assigned": "معين",
     "inProgress": "قيد التنفيذ",
     "completed": "مكتمل",
+    "cancelled": "ملغي",
     "contacted": "تم التواصل",
     "converted": "محول",
     "rejected": "مرفوض",

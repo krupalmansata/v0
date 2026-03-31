@@ -11,16 +11,26 @@
     },
 
     "businesses": {
-      ".read": true,
       "$businessId": {
+        ".read": true,
         ".write": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId"
+      }
+    },
+
+    "slugIndex": {
+      ".read": true,
+      "$slug": {
+        ".write": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === newData.val()"
       }
     },
 
     "jobs": {
       "$businessId": {
         ".read": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId",
-        ".write": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId"
+        ".write": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId",
+        "$jobId": {
+          ".validate": "newData.hasChildren(['customerName', 'serviceType', 'status']) && (newData.child('status').val() === 'draft' || newData.child('status').val() === 'new' || newData.child('status').val() === 'assigned' || newData.child('status').val() === 'in-progress' || newData.child('status').val() === 'completed' || newData.child('status').val() === 'cancelled')"
+        }
       }
     },
 
@@ -37,14 +47,20 @@
     "staff": {
       "$businessId": {
         ".read": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId",
-        ".write": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId"
+        ".write": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId",
+        "$staffId": {
+          ".validate": "newData.hasChildren(['name', 'email'])"
+        }
       }
     },
 
     "invoices": {
       "$businessId": {
         ".read": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId",
-        ".write": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId"
+        ".write": "auth !== null && root.child('users').child(auth.uid).child('businessId').val() === $businessId",
+        "$invoiceId": {
+          ".validate": "newData.hasChildren(['totalAmount', 'status', 'jobId']) && (newData.child('status').val() === 'draft' || newData.child('status').val() === 'sent' || newData.child('status').val() === 'paid')"
+        }
       }
     }
   }

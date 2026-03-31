@@ -10,7 +10,7 @@ import { PageHeader } from "@/components/page-header"
 import { StatusBadge } from "@/components/status-badge"
 import { useAuth } from "@/lib/auth-context"
 import { database } from "@/lib/firebase"
-import { ref, onValue, push, set } from "firebase/database"
+import { ref, onValue, push, set, update } from "firebase/database"
 import { useToast } from "@/components/ui/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
 import { useTranslations } from "next-intl"
@@ -42,6 +42,9 @@ export default function StaffPage() {
   const [jobs, setJobs] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [editStaff, setEditStaff] = useState<any | null>(null)
+  const [editFormData, setEditFormData] = useState({ name: "", email: "", phone: "", role: "", status: "active" })
+  const [editSaving, setEditSaving] = useState(false)
 
   const [formData, setFormData] = useState({
     name: "",
@@ -109,6 +112,26 @@ export default function StaffPage() {
     }
   }
 
+  const handleEditStaff = async () => {
+    if (!businessId || !editStaff || !editFormData.name) return
+    setEditSaving(true)
+    try {
+      await update(ref(database, `staff/${businessId}/${editStaff.id}`), {
+        name: editFormData.name,
+        email: editFormData.email,
+        phone: editFormData.phone,
+        role: editFormData.role,
+        status: editFormData.status,
+      })
+      toast({ title: "Staff Updated", description: "Staff member details updated successfully." })
+      setEditStaff(null)
+    } catch (error) {
+      toast({ title: "Error", description: "Could not update staff member", variant: "destructive" })
+    } finally {
+      setEditSaving(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -121,6 +144,7 @@ export default function StaffPage() {
   const todayStr = new Date().toISOString().split("T")[0]
 
   return (
+    <>
     <div className="space-y-6">
       <PageHeader title="Staff" description="Manage your team members">
         <Dialog open={showAddForm} onOpenChange={setShowAddForm}>
@@ -280,7 +304,20 @@ export default function StaffPage() {
                       </div>
                     </DialogContent>
                   </Dialog>
-                  <Button variant="ghost" size="sm">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setEditFormData({
+                        name: member.name || "",
+                        email: member.email || "",
+                        phone: member.phone || "",
+                        role: member.role || "",
+                        status: member.status || "active",
+                      })
+                      setEditStaff(member)
+                    }}
+                  >
                     Edit
                   </Button>
                 </div>
@@ -290,5 +327,70 @@ export default function StaffPage() {
         })}
       </div>
     </div>
+
+      {/* Edit Staff Dialog */}
+      <Dialog open={!!editStaff} onOpenChange={(open) => { if (!open) setEditStaff(null) }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Staff Member</DialogTitle>
+            <DialogDescription>Update the details for {editStaff?.name}.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 pt-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Full Name</Label>
+              <Input
+                id="edit-name"
+                value={editFormData.name}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, name: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">Login Email</Label>
+              <Input
+                id="edit-email"
+                type="email"
+                value={editFormData.email}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, email: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-phone">Phone Number</Label>
+              <Input
+                id="edit-phone"
+                value={editFormData.phone}
+                onChange={(e) => setEditFormData(prev => ({ ...prev, phone: e.target.value }))}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Role</Label>
+              <Select value={editFormData.role} onValueChange={(val) => setEditFormData(prev => ({ ...prev, role: val }))}>
+                <SelectTrigger><SelectValue placeholder="Select role" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Junior Technician">Junior Technician</SelectItem>
+                  <SelectItem value="Technician">Technician</SelectItem>
+                  <SelectItem value="Senior Technician">Senior Technician</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Status</Label>
+              <Select value={editFormData.status} onValueChange={(val) => setEditFormData(prev => ({ ...prev, status: val }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Active</SelectItem>
+                  <SelectItem value="inactive">Inactive</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex gap-2 pt-2">
+              <Button className="flex-1" onClick={handleEditStaff} disabled={editSaving || !editFormData.name}>
+                {editSaving ? "Saving..." : "Save Changes"}
+              </Button>
+              <Button variant="outline" onClick={() => setEditStaff(null)}>Cancel</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>  
   )
 }

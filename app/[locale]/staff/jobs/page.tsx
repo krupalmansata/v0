@@ -114,12 +114,12 @@ export default function StaffJobsPage() {
       const ext = file.name.split('.').pop() || 'jpg'
       const filePath = `job-photos/${userData.businessId}/${jobId}/${Date.now()}.${ext}`
       const { error: uploadError } = await supabase.storage
-        .from('invoice-images')
+        .from('job-photos')
         .upload(filePath, file, { contentType: file.type, upsert: false })
       if (uploadError) throw uploadError
 
       const { data: urlData } = supabase.storage
-        .from('invoice-images')
+        .from('job-photos')
         .getPublicUrl(filePath)
 
       const existingPhotos: string[] = normalizePhotos(job.proofPhotos)

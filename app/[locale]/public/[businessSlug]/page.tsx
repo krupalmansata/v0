@@ -46,19 +46,23 @@ export default function PublicBookingPage({ params }: { params: Promise<{ busine
   useEffect(() => {
     async function loadBusinessInfo() {
       try {
-        // For slug to businessId resolution, look through all businesses.
-        // Ideally move to a slug-index node `/slugIndex/${slug}` → businessId for O(1) lookup.
-        const businessesRef = ref(database, 'businesses')
-        const snapshot = await get(businessesRef)
-        if (snapshot.exists()) {
-          const businesses = snapshot.val()
-          for (const [id, data] of Object.entries(businesses)) {
-            if ((data as any).slug === businessSlug || id === businessSlug) {
-              setBusinessId(id)
-              setBusinessData(data)
-              return
-            }
+        // O(1) lookup: slugIndex/{slug} → businessId
+        const indexSnap = await get(ref(database, `slugIndex/${businessSlug}`))
+        if (indexSnap.exists()) {
+          const bId = indexSnap.val() as string
+          const bizSnap = await get(ref(database, `businesses/${bId}`))
+          if (bizSnap.exists()) {
+            setBusinessId(bId)
+            setBusinessData(bizSnap.val())
+            return
           }
+        }
+        // Fallback: direct businessId match (for businesses created before slugIndex existed)
+        const directSnap = await get(ref(database, `businesses/${businessSlug}`))
+        if (directSnap.exists()) {
+          setBusinessId(businessSlug)
+          setBusinessData(directSnap.val())
+          return
         }
         setBusinessNotFound(true)
       } catch (err) {

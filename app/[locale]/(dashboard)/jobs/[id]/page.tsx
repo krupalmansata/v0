@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from "react"
 import { Link, useRouter } from "@/src/i18n/routing"
-import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Image as ImageIcon, Pencil } from "lucide-react"
+import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Image as ImageIcon, Pencil, Trash2, XCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,7 +12,7 @@ import { PageHeader } from "@/components/page-header"
 import { StatusBadge } from "@/components/status-badge"
 import { useAuth } from "@/lib/auth-context"
 import { database } from "@/lib/firebase"
-import { ref, onValue, update, push, set, get } from "firebase/database"
+import { ref, onValue, update, push, set, get, remove } from "firebase/database"
 import { useToast } from "@/components/ui/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
 import { formatDate, formatTime, formatJobId, normalizePhotos } from "@/lib/utils"
@@ -31,6 +31,16 @@ import {
   DialogDescription,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
 
 const statusSteps = [
   { key: "new", label: "New" },
@@ -56,6 +66,10 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const [editOpen, setEditOpen] = useState(false)
   const [editLoading, setEditLoading] = useState(false)
   const [editData, setEditData] = useState<any>({})
+  const [cancelOpen, setCancelOpen] = useState(false)
+  const [deleteOpen, setDeleteOpen] = useState(false)
+  const [cancelling, setCancelling] = useState(false)
+  const [deleting, setDeleting] = useState(false)
 
   const serviceTypes = ["AC Servicing", "Plumbing", "Electrical", "Cleaning", "Pest Control", "Other"]
 
@@ -177,6 +191,33 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
       toast({ title: "Error", description: "Failed to reassign staff", variant: "destructive" })
     } finally {
       setUpdating(false)
+    }
+  }
+
+  const handleCancelJob = async () => {
+    if (!businessId || !job) return
+    setCancelling(true)
+    try {
+      await update(ref(database, `jobs/${businessId}/${id}`), { status: "cancelled" })
+      toast({ title: "Job Cancelled", description: "The job has been cancelled." })
+      setCancelOpen(false)
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to cancel job", variant: "destructive" })
+    } finally {
+      setCancelling(false)
+    }
+  }
+
+  const handleDeleteJob = async () => {
+    if (!businessId || !job) return
+    setDeleting(true)
+    try {
+      await remove(ref(database, `jobs/${businessId}/${id}`))
+      toast({ title: "Job Deleted", description: "The job has been permanently deleted." })
+      router.push("/jobs")
+    } catch (error) {
+      toast({ title: "Error", description: "Failed to delete job", variant: "destructive" })
+      setDeleting(false)
     }
   }
 
@@ -502,6 +543,26 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
                 </DialogContent>
               </Dialog>
 
+              {!(["completed", "cancelled"] as string[]).includes(job.status) && (
+                <Button
+                  variant="outline"
+                  className="w-full text-destructive hover:text-destructive"
+                  onClick={() => setCancelOpen(true)}
+                >
+                  <XCircle className="h-4 w-4 mr-2" />
+                  Cancel Job
+                </Button>
+              )}
+              {(["draft", "cancelled"] as string[]).includes(job.status) && (
+                <Button
+                  variant="ghost"
+                  className="w-full text-destructive hover:text-destructive"
+                  onClick={() => setDeleteOpen(true)}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Job
+                </Button>
+              )}
               <Button variant="ghost" className="w-full" asChild>
                 <Link href="/jobs">Back to Jobs</Link>
               </Button>
@@ -622,6 +683,50 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Cancel Job Dialog */}
+      <AlertDialog open={cancelOpen} onOpenChange={setCancelOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Cancel this job?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The job status will be set to <strong>Cancelled</strong>. The job will remain visible but marked as inactive.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Job</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={cancelling}
+              onClick={handleCancelJob}
+            >
+              {cancelling ? "Cancelling..." : "Cancel Job"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Job Dialog */}
+      <AlertDialog open={deleteOpen} onOpenChange={setDeleteOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete this job?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete the job and all its data. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep Job</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={deleting}
+              onClick={handleDeleteJob}
+            >
+              {deleting ? "Deleting..." : "Delete Job"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

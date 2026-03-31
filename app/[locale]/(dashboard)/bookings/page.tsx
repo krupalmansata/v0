@@ -46,6 +46,8 @@ export default function BookingsPage() {
   const [requests, setRequests] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [convertTarget, setConvertTarget] = useState<{ id: string; request: any } | null>(null)
+  const [converting, setConverting] = useState(false)
+  const [statusChangingId, setStatusChangingId] = useState<string | null>(null)
 
   useEffect(() => {
     if (!businessId) return
@@ -70,11 +72,14 @@ export default function BookingsPage() {
   )
 
   const handleStatusChange = async (id: string, newStatus: string) => {
+    setStatusChangingId(id)
     try {
       await update(ref(database, `bookings/${businessId}/${id}`), { status: newStatus })
       toast({ title: tBookings("statusUpdated"), description: tBookings("statusUpdatedDesc", { status: tBookings(`filters.${newStatus}`) }) })
     } catch (error) {
       toast({ title: tCommon("error"), description: tBookings("updateError"), variant: "destructive" })
+    } finally {
+      setStatusChangingId(null)
     }
   }
 
@@ -193,6 +198,7 @@ export default function BookingsPage() {
                         <Button
                           variant="outline"
                           size="sm"
+                          disabled={statusChangingId === request.id}
                           onClick={() => handleStatusChange(request.id, "contacted")}
                         >
                               {tBookings("actions.markContacted")}
@@ -200,6 +206,7 @@ export default function BookingsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
+                          disabled={statusChangingId === request.id}
                           onClick={() => handleStatusChange(request.id, "rejected")}
                         >
                               {tBookings("actions.reject")}
@@ -217,6 +224,7 @@ export default function BookingsPage() {
                         <Button
                           variant="ghost"
                           size="sm"
+                          disabled={statusChangingId === request.id}
                           onClick={() => handleStatusChange(request.id, "rejected")}
                         >
                               {tBookings("actions.reject")}
@@ -295,14 +303,16 @@ export default function BookingsPage() {
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
+              disabled={converting}
               onClick={() => {
                 if (convertTarget) {
+                  setConverting(true)
                   handleConvertToJob(convertTarget.id, convertTarget.request)
                   setConvertTarget(null)
                 }
               }}
             >
-              Convert to Job
+              {converting ? "Converting..." : "Convert to Job"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

@@ -17,6 +17,7 @@
     "assigned": "Assigned",
     "inProgress": "In Progress",
     "completed": "Completed",
+    "cancelled": "Cancelled",
     "contacted": "Contacted",
     "converted": "Converted",
     "rejected": "Rejected",
