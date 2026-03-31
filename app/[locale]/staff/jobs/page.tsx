@@ -52,7 +52,7 @@ export default function StaffJobsPage() {
         const active = jobsList.filter((j: any) => {
           const isMyJob = staffRecordId
             ? j.assignedStaffId === staffRecordId
-            : j.assignedStaffId // fallback: show all assigned if no mapping yet
+            : false // no mapping yet — show nothing until account is linked
           return isMyJob && ["assigned", "in-progress", "completed"].includes(j.status)
         })
         setJobs(active)

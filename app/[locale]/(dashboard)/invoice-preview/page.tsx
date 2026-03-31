@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect, useRef, useCallback } from "react"
-import Link from "next/link"
+import { Link } from "@/src/i18n/routing"
 import { useSearchParams } from "next/navigation"
 import { Download, Palette, Share2, ExternalLink } from "lucide-react"
 import { Button } from "@/components/ui/button"
