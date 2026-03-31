@@ -1,8 +1,7 @@
 "use client"
 
 import { use, useState, useEffect } from "react"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
+import { Link, useRouter } from "@/src/i18n/routing"
 import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Image as ImageIcon, Pencil } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"

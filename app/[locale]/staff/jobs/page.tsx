@@ -2,7 +2,7 @@
 import { useTranslations } from "next-intl"
 
 import { useState, useEffect, useRef } from "react"
-import Link from "next/link"
+import { Link } from "@/src/i18n/routing"
 import {
   Phone,
   MapPin,
