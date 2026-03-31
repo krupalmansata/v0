@@ -99,6 +99,36 @@ export default function StaffJobsPage() {
     }
   }
 
+  const compressImage = (file: File, maxBytes = 1.5 * 1024 * 1024): Promise<Blob> =>
+    new Promise((resolve, reject) => {
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        let { width, height } = img
+        const MAX_DIM = 1920
+        if (width > MAX_DIM || height > MAX_DIM) {
+          const ratio = Math.min(MAX_DIM / width, MAX_DIM / height)
+          width = Math.round(width * ratio)
+          height = Math.round(height * ratio)
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
+        const tryQ = (q: number) => {
+          canvas.toBlob(blob => {
+            if (!blob) { reject(new Error('Compression failed')); return }
+            if (blob.size <= maxBytes || q <= 0.2) resolve(blob)
+            else tryQ(Math.round((q - 0.1) * 10) / 10)
+          }, 'image/jpeg', q)
+        }
+        tryQ(0.8)
+      }
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to load image')) }
+      img.src = url
+    })
+
   const handleUploadPhoto = () => {
     fileInputRef.current?.click()
   }
@@ -111,11 +141,20 @@ export default function StaffJobsPage() {
     if (!job) return
     setUploading(true)
     try {
-      const ext = file.name.split('.').pop() || 'jpg'
+      let uploadBlob: Blob = file
+      let contentType = file.type
+      let ext = file.name.split('.').pop() || 'jpg'
+
+      if (file.type.startsWith('image/')) {
+        uploadBlob = await compressImage(file)
+        contentType = 'image/jpeg'
+        ext = 'jpg'
+      }
+
       const filePath = `job-photos/${userData.businessId}/${jobId}/${Date.now()}.${ext}`
       const { error: uploadError } = await supabase.storage
         .from('job-photos')
-        .upload(filePath, file, { contentType: file.type, upsert: false })
+        .upload(filePath, uploadBlob, { contentType, upsert: false })
       if (uploadError) throw uploadError
 
       const { data: urlData } = supabase.storage
@@ -224,12 +263,11 @@ export default function StaffJobsPage() {
                 </p>
               )}
 
-              {/* Hidden native file / camera input */}
+              {/* Hidden file input — no capture attribute so the user can pick from gallery or files */}
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
-                capture="environment"
+                accept="image/*,application/pdf"
                 className="hidden"
                 onChange={handleFileSelected}
               />

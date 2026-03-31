@@ -1,8 +1,8 @@
 "use client"
 
-import { use, useState, useEffect } from "react"
+import { use, useState, useEffect, useRef } from "react"
 import { Link, useRouter } from "@/src/i18n/routing"
-import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Image as ImageIcon, Pencil, Trash2, XCircle } from "lucide-react"
+import { ArrowLeft, Phone, MapPin, Calendar, User, FileText, Image as ImageIcon, Pencil, Trash2, XCircle, Upload } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,6 +12,7 @@ import { PageHeader } from "@/components/page-header"
 import { StatusBadge } from "@/components/status-badge"
 import { useAuth } from "@/lib/auth-context"
 import { database } from "@/lib/firebase"
+import { supabase } from "@/lib/supabase"
 import { ref, onValue, update, push, set, get, remove } from "firebase/database"
 import { useToast } from "@/components/ui/use-toast"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -70,8 +71,78 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
   const [deleteOpen, setDeleteOpen] = useState(false)
   const [cancelling, setCancelling] = useState(false)
   const [deleting, setDeleting] = useState(false)
+  const [uploadingDoc, setUploadingDoc] = useState(false)
+  const docInputRef = useRef<HTMLInputElement>(null)
 
   const serviceTypes = ["AC Servicing", "Plumbing", "Electrical", "Cleaning", "Pest Control", "Other"]
+
+  const compressImage = (file: File, maxBytes = 1.5 * 1024 * 1024): Promise<Blob> =>
+    new Promise((resolve, reject) => {
+      const img = new Image()
+      const url = URL.createObjectURL(file)
+      img.onload = () => {
+        URL.revokeObjectURL(url)
+        let { width, height } = img
+        const MAX_DIM = 1920
+        if (width > MAX_DIM || height > MAX_DIM) {
+          const ratio = Math.min(MAX_DIM / width, MAX_DIM / height)
+          width = Math.round(width * ratio)
+          height = Math.round(height * ratio)
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        canvas.getContext('2d')!.drawImage(img, 0, 0, width, height)
+        const tryQ = (q: number) => {
+          canvas.toBlob(blob => {
+            if (!blob) { reject(new Error('Compression failed')); return }
+            if (blob.size <= maxBytes || q <= 0.2) resolve(blob)
+            else tryQ(Math.round((q - 0.1) * 10) / 10)
+          }, 'image/jpeg', q)
+        }
+        tryQ(0.8)
+      }
+      img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to load image')) }
+      img.src = url
+    })
+
+  const handleDocFileSelected = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || !businessId || !job) return
+    setUploadingDoc(true)
+    try {
+      let uploadBlob: Blob = file
+      let contentType = file.type
+      let ext = file.name.split('.').pop() || 'bin'
+
+      if (file.type.startsWith('image/')) {
+        uploadBlob = await compressImage(file)
+        contentType = 'image/jpeg'
+        ext = 'jpg'
+      }
+
+      const filePath = `job-photos/${businessId}/${id}/${Date.now()}.${ext}`
+      const { error: uploadError } = await supabase.storage
+        .from('job-photos')
+        .upload(filePath, uploadBlob, { contentType, upsert: false })
+      if (uploadError) throw uploadError
+
+      const { data: urlData } = supabase.storage
+        .from('job-photos')
+        .getPublicUrl(filePath)
+
+      const existingPhotos: string[] = normalizePhotos(job.proofPhotos)
+      const updatedPhotos = [...existingPhotos, urlData.publicUrl]
+      await update(ref(database, `jobs/${businessId}/${id}`), { proofPhotos: updatedPhotos })
+      toast({ title: "Uploaded", description: "Document uploaded successfully." })
+    } catch (err: any) {
+      console.error('Doc upload error:', err)
+      toast({ title: "Upload failed", description: err.message, variant: "destructive" })
+    } finally {
+      setUploadingDoc(false)
+      if (docInputRef.current) docInputRef.current.value = ''
+    }
+  }
 
   useEffect(() => {
     if (!businessId) return
@@ -378,10 +449,27 @@ export default function JobDetailPage({ params }: { params: Promise<{ id: string
 
           {/* Proof Photos */}
           <Card>
-            <CardHeader>
+            <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle>Proof of Completion</CardTitle>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={uploadingDoc}
+                onClick={() => docInputRef.current?.click()}
+              >
+                <Upload className="h-4 w-4 mr-2" />
+                {uploadingDoc ? "Uploading..." : "Upload"}
+              </Button>
             </CardHeader>
             <CardContent>
+              {/* Hidden file input — supports images and PDFs */}
+              <input
+                ref={docInputRef}
+                type="file"
+                accept="image/*,application/pdf"
+                className="hidden"
+                onChange={handleDocFileSelected}
+              />
               {(() => {
                 const photos = normalizePhotos(job.proofPhotos)
                 return photos.length === 0 ? (
