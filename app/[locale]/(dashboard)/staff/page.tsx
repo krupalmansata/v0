@@ -45,6 +45,7 @@ export default function StaffPage() {
 
   const [formData, setFormData] = useState({
     name: "",
+    email: "",
     phone: "",
     role: "",
     status: "active"
@@ -92,6 +93,7 @@ export default function StaffPage() {
       const newStaffRef = push(ref(database, `staff/${businessId}`))
       await set(newStaffRef, {
         name: formData.name,
+        email: formData.email,
         phone: formData.phone,
         role: formData.role,
         status: formData.status,
@@ -99,7 +101,7 @@ export default function StaffPage() {
       })
       toast({ title: "Staff Member Added", description: "Successfully added new team member." })
       setShowAddForm(false)
-      setFormData({ name: "", phone: "", role: "", status: "active" })
+      setFormData({ name: "", email: "", phone: "", role: "", status: "active" })
     } catch (error) {
       toast({ title: "Error", description: "Could not add staff member", variant: "destructive" })
     } finally {
@@ -142,6 +144,19 @@ export default function StaffPage() {
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({...prev, name: e.target.value}))}
                 />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Login Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="staff@example.com"
+                  value={formData.email}
+                  onChange={(e) => setFormData(prev => ({...prev, email: e.target.value}))}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Enter the email the staff member uses to log in. This links their account to their jobs.
+                </p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="phone">Phone Number</Label>

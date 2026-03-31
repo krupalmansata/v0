@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from "react"
 import { User, onAuthStateChanged } from "firebase/auth"
 import { auth, database } from "./firebase"
-import { ref, get, set } from "firebase/database"
+import { ref, get, set, update } from "firebase/database"
 import { useTranslations } from "next-intl"
 
 interface AuthContextType {
@@ -61,7 +61,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             })
             setUserData(newUserData)
           } else {
-            setUserData(snapshot.val())
+            const existing = snapshot.val()
+            // If staffRecordId is not yet resolved, try to find it by email
+            if (!existing.staffRecordId && existing.businessId && currentUser.email) {
+              const staffSnap = await get(ref(database, `staff/${existing.businessId}`))
+              if (staffSnap.exists()) {
+                const staffData = staffSnap.val()
+                const matchKey = Object.keys(staffData).find(
+                  (k) => staffData[k].email?.toLowerCase() === currentUser.email!.toLowerCase()
+                )
+                if (matchKey) {
+                  await update(userRef, { staffRecordId: matchKey })
+                  setUserData({ ...existing, staffRecordId: matchKey })
+                } else {
+                  setUserData(existing)
+                }
+              } else {
+                setUserData(existing)
+              }
+            } else {
+              setUserData(existing)
+            }
           }
         } catch (error) {
           console.error("Error syncing user data:", error)

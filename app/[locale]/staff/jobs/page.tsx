@@ -33,6 +33,7 @@ export default function StaffJobsPage() {
   const [loading, setLoading] = useState(true)
   const [selectedJob, setSelectedJob] = useState<string | null>(null)
   const [uploading, setUploading] = useState(false)
+  const [completionNotes, setCompletionNotes] = useState("")
   const fileInputRef = useRef<HTMLInputElement>(null)
   const selectedJobRef = useRef<string | null>(null)
   
@@ -45,7 +46,14 @@ export default function StaffJobsPage() {
       if (snap.exists()) {
         const data = snap.val()
         const jobsList = Object.keys(data).map(key => ({ id: key, ...data[key] }))
-        const active = jobsList.filter((j: any) => j.assignedStaffId && ["assigned", "in-progress"].includes(j.status))
+        // Bug fix #1 & #2: filter by the logged-in staff member's record ID
+        const staffRecordId = userData.staffRecordId
+        const active = jobsList.filter((j: any) => {
+          const isMyJob = staffRecordId
+            ? j.assignedStaffId === staffRecordId
+            : j.assignedStaffId // fallback: show all assigned if no mapping yet
+          return isMyJob && ["assigned", "in-progress", "completed"].includes(j.status)
+        })
         setJobs(active)
       } else {
         setJobs([])
@@ -70,9 +78,20 @@ export default function StaffJobsPage() {
 
   const handleCompleteJob = async (jobId: string) => {
     if (!userData?.businessId) return
+    const job = jobs.find(j => j.id === jobId)
+    // Bug fix #6: require at least one proof photo
+    const photos: string[] = job?.proofPhotos || []
+    if (photos.length === 0) {
+      toast({ title: "Proof required", description: "Please upload at least one proof photo before marking complete.", variant: "destructive" })
+      return
+    }
     try {
-      await update(ref(database, `jobs/${userData.businessId}/${jobId}`), { status: "completed" })
+      await update(ref(database, `jobs/${userData.businessId}/${jobId}`), {
+        status: "completed",
+        completionNotes: completionNotes.trim(),
+      })
       setSelectedJob(null)
+      setCompletionNotes("")
     } catch (error) {
       console.error("Failed to complete job:", error)
       toast({ title: tStatus("Error"), description: tStatus("Error"), variant: "destructive" })
@@ -117,6 +136,11 @@ export default function StaffJobsPage() {
 
   const currentJob = selectedJob ? jobs.find((j) => j.id === selectedJob) : null
   selectedJobRef.current = selectedJob
+
+  // Reset notes when switching jobs
+  useEffect(() => {
+    setCompletionNotes("")
+  }, [selectedJob])
 
   if (currentJob) {
     const currentStatus = getJobStatus(currentJob.id)
@@ -208,15 +232,18 @@ export default function StaffJobsPage() {
                 className="hidden"
                 onChange={handleFileSelected}
               />
-              <Button
-                variant="outline"
-                className="w-full"
-                disabled={uploading}
-                onClick={handleUploadPhoto}
-              >
-                <Camera className="h-4 w-4 mr-2" />
-                {uploading ? "Uploading..." : t("uploadPhoto")}
-              </Button>
+              {/* Bug fix #5: hide upload button on completed jobs */}
+              {currentStatus !== "completed" && (
+                <Button
+                  variant="outline"
+                  className="w-full"
+                  disabled={uploading}
+                  onClick={handleUploadPhoto}
+                >
+                  <Camera className="h-4 w-4 mr-2" />
+                  {uploading ? "Uploading..." : t("uploadPhoto")}
+                </Button>
+              )}
             </CardContent>
           </Card>
 
@@ -227,9 +254,12 @@ export default function StaffJobsPage() {
                 <CardTitle className="text-base">{t("completionNotes")}</CardTitle>
               </CardHeader>
               <CardContent>
+                {/* Bug fix #4: bind textarea to state so notes are saved */}
                 <Textarea
                   placeholder={t("addNotesPlaceholder")}
                   rows={3}
+                  value={completionNotes}
+                  onChange={(e) => setCompletionNotes(e.target.value)}
                 />
               </CardContent>
             </Card>
@@ -277,7 +307,7 @@ export default function StaffJobsPage() {
           <div>
             <h1 className="text-lg font-semibold">{t("myJobs")}</h1>
             <p className="text-sm text-muted-foreground">
-              {t("assignedJobsCount", { count: jobs.length })}
+              {t("assignedJobsCount", { count: jobs.filter(j => j.status !== "completed").length })}
             </p>
           </div>
           <Button variant="outline" size="sm" asChild>
